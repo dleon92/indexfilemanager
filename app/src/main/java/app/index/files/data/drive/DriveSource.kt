@@ -19,7 +19,7 @@ import java.io.InputStream
  * Pasta do Google Drive. Mesmo contrato da pasta local: a UI, o cache de
  * listagem, o índice e as miniaturas não sabem a diferença.
  */
-class DriveSource(ctx: Context) : FileSource {
+open class DriveSource(ctx: Context) : FileSource {
     private val app = ctx.applicationContext
 
     override fun listChildren(folderId: String): List<FileItem> = DriveApi.children(app, folderId)

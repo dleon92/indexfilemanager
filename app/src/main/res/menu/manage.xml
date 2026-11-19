@@ -12,6 +12,13 @@
                 android:title="@string/add_local_folder" />
             <item
                 android:id="@+id/action_add_drive"
-                android:title="@string/add_drive_folder" />        </menu>
+                android:title="@string/add_drive_folder" />
+            <item
+                android:id="@+id/action_add_recent"
+                android:title="@string/add_recent_menu" />
+            <item
+                android:id="@+id/action_add_drive_recent"
+                android:title="@string/add_drive_recent_menu" />
+        </menu>
     </item>
 </menu>

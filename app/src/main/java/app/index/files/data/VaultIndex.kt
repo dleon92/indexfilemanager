@@ -119,6 +119,11 @@ object VaultIndex {
 
     // ---- Consultas ----
 
+    /** Ids das pastas já indexadas dentro da protegida [e] (ela inclusive). */
+    fun folderIds(ctx: Context, e: VaultEntry): Set<String> = synchronized(loaded) {
+        idx(ctx, e).folders.keys.toHashSet().apply { add(e.folderId) }
+    }
+
     fun read(ctx: Context, e: VaultEntry, folderId: String): List<FileItem>? =
         synchronized(loaded) { idx(ctx, e).folders[folderId]?.items }
 

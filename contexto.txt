@@ -338,9 +338,14 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
 - Antes do git (v0.14.3): revisão de dados pessoais e segredos. dist/ no .gitignore (zips de código
   v0.13.6–v0.14.2 têm a chave de assinatura: não compartilhar); snapshots não levam mais signing/;
   nome do autor tirado do Sobre e do README.
+- Extra pós-entrega (v0.15.0): pasta Recentes do Drive (arquivos novos da nuvem, mesmos filtros,
+  sem os de pastas protegidas). As duas Recentes deixam de vir de fábrica: são adicionadas pelo
+  Adicionar pasta e removidas em Gerenciar pastas (saiu a chave "Mostrar a pasta Recentes").
+  A lista guarda a posição ao voltar de uma imagem, de outro app ou do processo recriado.
+  Testado no S23.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,
   mudar o projeto para "Em produção" sem verificação.
 - Git: feito em 19/11/2026 (github.com/dleon92/indexfilemanager, público); snapshots em dist/ seguem.
-- Recentes do Drive: pasta virtual com os arquivos novos da nuvem, com os mesmos filtros.
+- Recentes do Drive: feita na v0.15.0.

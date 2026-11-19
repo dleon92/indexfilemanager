@@ -89,15 +89,11 @@ class HomeFragment : Fragment(R.layout.fragment_list) {
     private fun load() {
         val g = ++gen
         val ctx = requireContext().applicationContext
-        val showRecent = Prefs.get(ctx).showRecent && android.os.Build.VERSION.SDK_INT >= 30
         Bg.run({
             val roots = Roots.all(ctx).onEach { it.available = Roots.checkAvailable(ctx, it) }
             // Recentes no topo; sem pastas nem permissão, a tela vazia ("Adicionar pasta") vem primeiro.
-            if (showRecent && (roots.isNotEmpty() || Roots.hasAllFiles())) {
-                listOf(Roots.recent(ctx).also { it.available = Roots.hasAllFiles() }) + roots
-            } else {
-                roots
-            }
+            // Recentes (só as adicionadas pelo usuário) no topo.
+            Roots.virtual(ctx) + roots
         }) { res ->
             if (view == null || g != gen) return@run
             val roots = res.getOrDefault(emptyList())

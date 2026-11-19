@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-// Chave de release prÃ³pria (pasta signing/, fora do git). Sem ela,
+// Chave de release própria (pasta signing/, fora do git). Sem ela,
 // o release usa a chave de debug para continuar compilando.
 val releaseKeys = Properties().apply {
     val f = rootProject.file("signing/keystore.properties")
@@ -20,8 +20,8 @@ android {
         applicationId = "app.index.files"
         minSdk = 26
         targetSdk = 37
-        versionCode = 24
-        versionName = "0.14.3"
+        versionCode = 25
+        versionName = "0.15.0"
     }
 
     signingConfigs {
@@ -53,18 +53,18 @@ android {
     }
 
     androidResources {
-        // SÃ³ portuguÃªs (padrÃ£o): descarta as ~90 traduÃ§Ãµes que o AppCompat traz.
+        // Só português (padrão): descarta as ~90 traduções que o AppCompat traz.
         localeFilters += listOf("pt")
     }
 
     packaging {
         resources {
-            // Metadados que nÃ£o sÃ£o usados em runtime.
+            // Metadados que não são usados em runtime.
             excludes += listOf("META-INF/*.version", "META-INF/**/*.kotlin_module", "kotlin/**", "DebugProbesKt.bin")
         }
     }
 
-    // Bloco de metadados de dependÃªncias (sÃ³ serve Ã  Play Store; ocupa espaÃ§o no APK).
+    // Bloco de metadados de dependências (só serve à Play Store; ocupa espaço no APK).
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false

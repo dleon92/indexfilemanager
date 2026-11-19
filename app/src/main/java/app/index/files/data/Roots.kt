@@ -26,13 +26,17 @@ class Root(
     /** Última indexação completa (ms); 0 = nunca. */
     val indexedAt: Long = 0,
 ) {
-    val isDrive get() = source == Roots.DRIVE
+    /** Pasta do Drive, incluindo a virtual "Recentes do Drive". */
+    val isDrive get() = source == Roots.DRIVE || source == Roots.DRIVE_RECENT
 
     /** Lida pelo caminho ("Acesso a todos os arquivos"), não pelo SAF. */
     val isFile get() = source == Roots.FILE
 
     /** Pasta virtual "Recentes" (não fica no banco; ver [Roots.recent]). */
-    val isRecent get() = source == Roots.RECENT
+    val isRecent get() = source == Roots.RECENT || source == Roots.DRIVE_RECENT
+
+    /** Pasta virtual "Recentes do Drive" (não fica no banco; ver [Roots.driveRecent]). */
+    val isDriveRecent get() = source == Roots.DRIVE_RECENT
 
     /** Calculado em segundo plano (permissão persistida + pasta ainda existe). */
     var available: Boolean = true
@@ -46,9 +50,13 @@ object Roots {
     const val DRIVE = "drive"
     const val FILE = "file"
     const val RECENT = "recent"
+    const val DRIVE_RECENT = "drive_recent"
 
     /** Id fixo da pasta virtual Recentes (negativo: nunca colide com as linhas do banco; -1/-2 já são usados). */
     const val RECENT_ID = -10L
+
+    /** Id fixo da pasta virtual Recentes do Drive. */
+    const val DRIVE_RECENT_ID = -11L
 
     /** Pasta virtual "Recentes" (Android 11+, com "Acesso a todos os arquivos"). */
     fun recent(ctx: Context): Root = Root(
@@ -59,6 +67,32 @@ object Roots {
         name = ctx.getString(app.index.files.R.string.recent_title),
         alias = ctx.getString(app.index.files.R.string.recent_title),
     )
+
+    /** Pasta virtual "Recentes do Drive" (arquivos novos da nuvem, com os filtros da Recentes). */
+    fun driveRecent(ctx: Context): Root = Root(
+        id = DRIVE_RECENT_ID,
+        source = DRIVE_RECENT,
+        uri = Uri.parse("drive-recent://files"),
+        docId = DRIVE_RECENT,
+        name = ctx.getString(app.index.files.R.string.drive_recent_title),
+        alias = ctx.getString(app.index.files.R.string.drive_recent_title),
+    )
+
+    /** Pastas Recentes adicionadas pelo usuário, com a disponibilidade (permissão ou conta). */
+    fun virtual(ctx: Context): List<Root> {
+        val p = Prefs.get(ctx)
+        val out = ArrayList<Root>(2)
+        if (p.recentAdded && Build.VERSION.SDK_INT >= 30) out.add(recent(ctx).also { it.available = hasAllFiles() })
+        if (p.driveRecentAdded) out.add(driveRecent(ctx).also { it.available = DriveAuth.connected(ctx) })
+        return out
+    }
+
+    /** Adiciona (ou tira) uma pasta Recentes da lista. */
+    fun setVirtual(ctx: Context, id: Long, added: Boolean) {
+        val p = Prefs.get(ctx)
+        if (id == RECENT_ID) p.recentAdded = added else if (id == DRIVE_RECENT_ID) p.driveRecentAdded = added
+        if (!added && p.startRoot == id) p.setStart(0L)
+    }
 
     /** "Acesso a todos os arquivos" concedido (Android 11+; antes disso o SAF já libera a Download). */
     fun hasAllFiles(): Boolean = Build.VERSION.SDK_INT >= 30 && Environment.isExternalStorageManager()
@@ -83,7 +117,7 @@ object Roots {
             out
         }
 
-    fun get(ctx: Context, id: Long): Root? = if (id == RECENT_ID) recent(ctx) else
+    fun get(ctx: Context, id: Long): Root? = if (id == RECENT_ID) recent(ctx) else if (id == DRIVE_RECENT_ID) driveRecent(ctx) else
         AppDb.get(ctx).readableDatabase.rawQuery(
             "SELECT id, source, uri, doc_id, name, alias, item_count, indexed_at FROM roots WHERE id=?",
             arrayOf(id.toString()),
@@ -218,6 +252,7 @@ object Roots {
 
     /** Remove do app (arquivos do usuário nunca são tocados) e libera a permissão. */
     fun remove(ctx: Context, id: Long) {
+        if (id == RECENT_ID || id == DRIVE_RECENT_ID) return setVirtual(ctx, id, false)
         val r = get(ctx, id) ?: return
         val db = AppDb.get(ctx).writableDatabase
         db.delete("roots", "id=?", arrayOf(id.toString()))
@@ -260,6 +295,7 @@ object Roots {
 
     fun source(ctx: Context, r: Root): FileSource =
         when {
+            r.isDriveRecent -> app.index.files.data.drive.DriveRecentSource(ctx)
             r.isDrive -> DriveSource(ctx)
             r.isFile -> FsSource(ctx)
             r.isRecent -> RecentSource(ctx)

@@ -53,7 +53,11 @@ class RootAdapter(
         )
         h.name.text = r.alias
         if (r.isRecent) {
-            h.meta.text = if (r.available) app.index.files.data.RecentSource.describe(ctx) else ctx.getString(R.string.recent_needs_access)
+            h.meta.text = when {
+                r.isDriveRecent && !r.available -> ctx.getString(R.string.drive_disconnected_tap)
+                !r.available -> ctx.getString(R.string.recent_needs_access)
+                else -> app.index.files.data.RecentSource.describe(ctx, r.isDriveRecent)
+            }
             return
         }
         var origin = ctx.getString(if (r.isDrive) R.string.source_drive else R.string.source_local)

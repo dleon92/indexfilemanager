@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView
 import app.index.files.Bg
 import app.index.files.R
 import app.index.files.data.Indexer
+import app.index.files.data.Prefs
 import app.index.files.data.Root
 import app.index.files.data.Roots
 import app.index.files.thumbs.ThumbnailManager
@@ -37,9 +38,18 @@ class ManageFoldersFragment : Fragment(R.layout.fragment_list) {
             when (item.itemId) {
                 R.id.action_add_local -> main().addLocalFolder()
                 R.id.action_add_drive -> main().addDriveFolder()
+                R.id.action_add_recent -> main().addRecentLocal()
+                R.id.action_add_drive_recent -> main().addRecentDrive()
                 else -> return false
             }
             return true
+        }
+
+        // Recentes já adicionadas (ou sem Android 11+, a local) saem do menu.
+        override fun onPrepareMenu(menu: Menu) {
+            val p = Prefs.get(requireContext())
+            menu.findItem(R.id.action_add_recent)?.isVisible = android.os.Build.VERSION.SDK_INT >= 30 && !p.recentAdded
+            menu.findItem(R.id.action_add_drive_recent)?.isVisible = !p.driveRecentAdded
         }
     }
 
@@ -76,17 +86,32 @@ class ManageFoldersFragment : Fragment(R.layout.fragment_list) {
     private fun load() {
         val g = ++gen
         val ctx = requireContext().applicationContext
-        Bg.run({ Roots.all(ctx).onEach { it.available = Roots.checkAvailable(ctx, it) } }) { res ->
+        Bg.run({ Roots.virtual(ctx) + Roots.all(ctx).onEach { it.available = Roots.checkAvailable(ctx, it) } }) { res ->
             val v = view ?: return@run
             if (g != gen) return@run
             val roots = res.getOrDefault(emptyList())
             adapter.items = roots
+            requireActivity().invalidateOptionsMenu()
             v.findViewById<View>(R.id.empty).visibility = if (roots.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
     private fun showActions(r: Root, anchor: View) {
         val pm = PopupMenu(requireContext(), anchor)
+        if (r.isRecent) {
+            // Pasta virtual: só liberar o acesso (se faltar) e remover da lista.
+            if (!r.available) pm.menu.add(0, 2, 0, if (r.isDrive) R.string.drive_connect else R.string.readd)
+            pm.menu.add(0, 3, 1, R.string.remove)
+            pm.setOnMenuItemClickListener {
+                when (it.itemId) {
+                    2 -> if (r.isDrive) main().connectDrive() else main().readd(r)
+                    3 -> confirmRemove(r)
+                }
+                true
+            }
+            pm.show()
+            return
+        }
         pm.menu.add(0, 1, 0, R.string.rename)
         if (!r.available) pm.menu.add(0, 2, 1, if (r.isDrive) R.string.drive_connect else R.string.readd)
         if (r.available) pm.menu.add(0, 5, 2, R.string.reindex)

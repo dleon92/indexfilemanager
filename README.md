@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.14.3 (`dist/index-v0.14.3-fase13.apk`, leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.15.0 (`dist/index-v0.15.0-fase13.apk`, Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -620,6 +620,22 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   ("[imagem]"); se algo falhar, cai no modo só texto. Testado no Tab S7+ (abertura externa de
   .docx e .doc; .doc convertido pelo Word e o de teste antigo).
 
+## Recentes do Drive e pastas Recentes adicionadas (v0.15.0)
+
+- **Recentes do Drive**: pasta virtual (`DriveRecentSource`, raiz -11 fora do banco) com os
+  arquivos criados ou modificados no Drive no período, mais novos primeiro (até 500; pastas e
+  atalhos de fora). Mesmos filtros da Recentes do aparelho (tipo e 7/30/90 dias, compartilhados);
+  em Documentos entram também Documentos, Planilhas e Apresentações Google. Abrir, miniaturas,
+  compartilhar, renomear, mover e apagar como nas pastas do Drive.
+- Arquivos dentro de pastas protegidas do Drive ficam de fora: o app lista uma vez as subpastas
+  das protegidas (guardado por 10 min) e compara com as pastas pai de cada arquivo.
+- **Nada vem de fábrica**: as duas Recentes são adicionadas como as outras pastas ("Adicionar pasta
+  de" e o "+" de Gerenciar pastas), pedem a permissão ou o login se faltar e saem pelo ⋮ "Remover".
+  A chave "Mostrar a pasta Recentes" saiu; quem atualiza mantém as que já via.
+- **Posição da lista**: ao voltar de uma imagem, de outro app ou do processo recriado, a pasta
+  continua onde estava (e as pastas de cima também).
+- Testado no S23.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -670,3 +686,4 @@ Nenhuma outra. Kotlin vem embutido no AGP 9.
 | v0.14.1-fase13 (Word com formatação) | 1.031.941 bytes (1.008 KB) | — |
 | v0.14.2-fase13 (abrir de outros apps, .doc formatado) | 1.042.265 bytes (1.018 KB) | — |
 | v0.14.3-fase13 (sem nome do autor no Sobre) | 1.042.165 bytes (1.018 KB) | — |
+| v0.15.0-fase13 (Recentes do Drive, Recentes adicionadas, posição da lista) | 1.045.357 bytes (1.021 KB) | — |

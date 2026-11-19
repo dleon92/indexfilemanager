@@ -80,11 +80,6 @@
             android:id="@+id/row_start_folder"
             layout="@layout/row_setting" />
 
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/show_recent"
-            style="@style/IndexRow"
-            android:text="@string/show_recent" />
-
         <TextView
             style="@style/IndexSubHeader"
             android:text="@string/sub_display" />

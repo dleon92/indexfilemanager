@@ -120,10 +120,10 @@ class RecentSource(ctx: Context, private val fs: FsSource = FsSource(ctx)) : Fil
         }
 
         /** Descrição da pasta com o filtro atual ("Fotos · últimos 7 dias"). */
-        fun describe(ctx: Context): String {
+        fun describe(ctx: Context, drive: Boolean = false): String {
             val p = Prefs.get(ctx)
             val t = typeLabel(p.recentType)
-            return if (t == null) ctx.getString(app.index.files.R.string.recent_meta, p.recentDays)
+            return if (t == null) ctx.getString(if (drive) app.index.files.R.string.drive_recent_meta else app.index.files.R.string.recent_meta, p.recentDays)
             else ctx.getString(app.index.files.R.string.recent_meta_type, ctx.getString(t), p.recentDays)
         }
         private val APP_DATA = Regex("/Android/(data|obb)/")

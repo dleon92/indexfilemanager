@@ -70,6 +70,9 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
     /** Posição de rolagem de cada nível, salva ao entrar numa subpasta. */
     private val scrollStates = ArrayList<Parcelable?>()
 
+    /** Posição da lista guardada quando a tela some (visualizador aberto, processo recriado). */
+    private var pendingScroll: Parcelable? = null
+
     private var spec: SortSpec? = null
     private var customSpec = false
     private var shownFolder: String? = null
@@ -156,12 +159,19 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         val s = savedInstanceState ?: arguments
         s?.getStringArrayList(S_IDS)?.let { ids.addAll(it) }
         s?.getStringArrayList(S_NAMES)?.let { names.addAll(it) }
+        // Processo recriado (o app ficou em segundo plano): volta para a mesma posição da lista.
+        savedInstanceState?.let { b ->
+            @Suppress("DEPRECATION")
+            pendingScroll = b.getParcelable(S_SCROLL)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putStringArrayList(S_IDS, ids)
         outState.putStringArrayList(S_NAMES, names)
+        val state = if (::lm.isInitialized && view != null && !randomActive) lm.onSaveInstanceState() else pendingScroll
+        state?.let { outState.putParcelable(S_SCROLL, it) }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -262,7 +272,10 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             // Voltou de outra tela (pesquisa, configurações): a seleção sorteada continua.
             showRandom(randomShown)
         } else {
-            load(null)
+            // Voltou do visualizador (ou de outra tela): continua de onde a lista estava.
+            val restore = pendingScroll
+            pendingScroll = null
+            load(restore)
         }
         // Pasta protegida: índice completo dela (para a busca), em segundo plano.
         vault?.let { if (savedInstanceState == null) VaultIndex.walk(ctx, it, source, r.isDrive) }
@@ -287,6 +300,8 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         currentKey?.let(Preload::leave)
         currentKey = null
         if (::list.isInitialized) {
+            // A tela da lista some ao abrir uma imagem ou outra tela: guarda onde estava.
+            if (!randomActive && shownFolder != null) pendingScroll = lm.onSaveInstanceState()
             list.removeCallbacks(showProgress)
             list.removeCallbacks(showRefreshing)
         }
@@ -355,11 +370,15 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         if (ids.isEmpty() || ids[0] != topId) {
             ids.clear(); names.clear()
             ids.add(topId); names.add(topName)
+            scrollStates.clear()
         } else {
             names[0] = topName
         }
-        scrollStates.clear()
-        repeat(ids.size) { scrollStates.add(null) }
+        // Mesma pilha de pastas (a tela foi recriada): mantém as posições dos níveis de cima.
+        if (scrollStates.size != ids.size) {
+            scrollStates.clear()
+            repeat(ids.size) { scrollStates.add(null) }
+        }
     }
 
     /** Depois de "Readicionar": a Uri da raiz mudou. */
@@ -1198,6 +1217,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             }
         private const val S_IDS = "ids"
         private const val S_NAMES = "names"
+        private const val S_SCROLL = "scroll"
 
         /** Abre a raiz; com [ids]/[names] (da raiz até a pasta) abre direto numa subpasta. */
         fun newInstance(rootId: Long, ids: ArrayList<String>? = null, names: ArrayList<String>? = null) =

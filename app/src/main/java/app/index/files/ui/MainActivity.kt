@@ -67,10 +67,14 @@ class MainActivity : AppCompatActivity() {
     /** Abrir o seletor do Drive assim que a conta for conectada. */
     private var pickDriveAfterConnect = false
 
+    /** Conectou pelo atalho "Recentes do Drive" do Adicionar pasta: abre a pasta ao terminar. */
+    private var recentAfterConnect = false
+
     /** Tela de consentimento/escolha de conta do Google (Play Services). */
     private val authLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
         if (res.resultCode != RESULT_OK) {
             pickDriveAfterConnect = false
+            recentAfterConnect = false
             Toast.makeText(this, R.string.drive_connect_cancelled, Toast.LENGTH_SHORT).show()
             return@registerForActivityResult
         }
@@ -78,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         r.onSuccess { finishConnect(it) }.onFailure {
             Log.w("Drive", "resultado da autorização", it)
             pickDriveAfterConnect = false
+            recentAfterConnect = false
             Toast.makeText(this, R.string.drive_connect_failed, Toast.LENGTH_LONG).show()
         }
     }
@@ -576,13 +581,58 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 
-    /** "Adicionar pasta": deste aparelho (SAF) ou do Google Drive. */
+    /**
+     * "Adicionar pasta": deste aparelho, do Google Drive ou as pastas Recentes ainda não
+     * adicionadas (pedem a permissão ou o login e abrem a pasta).
+     */
     fun chooseAdd() {
-        val opts = arrayOf(getString(R.string.source_local_device), getString(R.string.source_drive))
+        val p = Prefs.get(this)
+        val labels = arrayListOf(getString(R.string.source_local_device), getString(R.string.source_drive))
+        val actions = arrayListOf<() -> Unit>({ addLocalFolder() }, { addDriveFolder() })
+        if (Build.VERSION.SDK_INT >= 30 && !p.recentAdded) {
+            labels.add(getString(R.string.add_recent_local))
+            actions.add { addRecentLocal() }
+        }
+        if (!p.driveRecentAdded) {
+            labels.add(getString(R.string.add_recent_drive))
+            actions.add { addRecentDrive() }
+        }
         AlertDialog.Builder(this)
             .setTitle(R.string.add_folder_from)
-            .setItems(opts) { _, which -> if (which == 0) addLocalFolder() else addDriveFolder() }
+            .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
             .show()
+    }
+
+    /** "Recentes": pede "Acesso a todos os arquivos" se faltar e abre a pasta. */
+    fun addRecentLocal() {
+        if (Roots.hasAllFiles()) {
+            openRecent(Roots.RECENT_ID)
+            return
+        }
+        askAllFiles { granted ->
+            if (!granted) {
+                Toast.makeText(this, R.string.all_files_denied_recent, Toast.LENGTH_LONG).show()
+                return@askAllFiles
+            }
+            if (!isFinishing && !supportFragmentManager.isStateSaved) openRecent(Roots.RECENT_ID)
+        }
+    }
+
+    /** "Recentes do Drive": conecta a conta se preciso e abre a pasta. */
+    fun addRecentDrive() {
+        if (DriveAuth.connected(this)) {
+            openRecent(Roots.DRIVE_RECENT_ID)
+            return
+        }
+        recentAfterConnect = true
+        connectDrive()
+    }
+
+    /** Adiciona a Recentes [id] à lista de pastas e abre. */
+    private fun openRecent(id: Long) {
+        Roots.setVirtual(this, id, true)
+        notifyRootsChanged()
+        push(BrowserFragment.newInstance(id))
     }
 
     /**
@@ -705,6 +755,7 @@ class MainActivity : AppCompatActivity() {
             .addOnFailureListener(this) { e ->
                 Log.w("Drive", "authorize", e)
                 pickDriveAfterConnect = false
+                recentAfterConnect = false
                 Toast.makeText(this, R.string.drive_connect_failed, Toast.LENGTH_LONG).show()
             }
     }
@@ -720,12 +771,14 @@ class MainActivity : AppCompatActivity() {
                 if (!isFinishing && !supportFragmentManager.isStateSaved) {
                     notifyRootsChanged()
                     if (pickDriveAfterConnect) push(DrivePickerFragment())
+                    else if (recentAfterConnect) openRecent(Roots.DRIVE_RECENT_ID)
                 }
             }.onFailure {
                 Log.w("Drive", "onAuthorized", it)
                 Toast.makeText(app, R.string.drive_connect_failed, Toast.LENGTH_LONG).show()
             }
             pickDriveAfterConnect = false
+            recentAfterConnect = false
         }
     }
 

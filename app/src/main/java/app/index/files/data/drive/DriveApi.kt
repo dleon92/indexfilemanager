@@ -76,6 +76,40 @@ object DriveApi {
         }
     }
 
+    /**
+     * Arquivos criados ou modificados desde [sinceMs] (pastas Recentes do Drive), mais novos
+     * primeiro, até [limit]. [extra]: trecho de consulta do filtro de tipo (com "and" na frente).
+     * Atalhos e pastas ficam de fora. Devolve cada item com as pastas pai (para as protegidas).
+     */
+    fun recent(ctx: Context, sinceMs: Long, extra: String, limit: Int): List<Pair<FileItem, List<String>>> {
+        val t = Instant.ofEpochMilli(sinceMs).toString()
+        val q = "(modifiedTime > '$t' or createdTime > '$t') and trashed=false and " +
+            "mimeType!='$FOLDER' and mimeType!='$SHORTCUT'$extra"
+        val out = ArrayList<Pair<FileItem, List<String>>>()
+        var page: String? = null
+        do {
+            val url = BASE + "files?" + query(
+                "q" to q,
+                "fields" to "nextPageToken,files(id,name,mimeType,size,modifiedTime,thumbnailLink,parents)",
+                "orderBy" to "modifiedTime desc",
+                "pageSize" to minOf(1000, limit - out.size).toString(),
+                "pageToken" to page,
+                "supportsAllDrives" to "true",
+                "includeItemsFromAllDrives" to "true",
+            )
+            val json = JSONObject(getText(ctx, url))
+            val files = json.optJSONArray("files")
+            if (files != null) for (i in 0 until files.length()) {
+                val o = files.getJSONObject(i)
+                val item = parse(o) ?: continue
+                val ps = o.optJSONArray("parents")
+                out.add(item to if (ps == null) emptyList() else List(ps.length()) { ps.getString(it) })
+            }
+            page = json.optString("nextPageToken").ifEmpty { null }
+        } while (page != null && out.size < limit)
+        return out
+    }
+
     private fun list(ctx: Context, q: String): List<FileItem> {
         val out = ArrayList<FileItem>()
         var page: String? = null

@@ -57,12 +57,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         switch(view, R.id.internal_viewer, prefs.internalViewer) { prefs.internalViewer = it }
         switch(view, R.id.internal_docs, prefs.internalDocs) { prefs.internalDocs = it }
         bindStartFolder(view)
-        val recentSw = view.findViewById<View>(R.id.show_recent)
-        if (android.os.Build.VERSION.SDK_INT >= 30) {
-            switch(view, R.id.show_recent, prefs.showRecent) { prefs.showRecent = it }
-        } else {
-            recentSw.visibility = View.GONE
-        }
         // Sobre: versão instalada (do pacote, sem BuildConfig).
         val ctx = requireContext()
         val version = runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName }.getOrNull().orEmpty()
@@ -497,7 +491,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         fun options(roots: List<app.index.files.data.Root>): List<Opt> {
             val out = ArrayList<Opt>()
             out.add(Opt(getString(R.string.start_folder_none), 0L))
-            if (android.os.Build.VERSION.SDK_INT >= 30) out.add(Opt(getString(R.string.recent_title), Roots.RECENT_ID))
+            if (android.os.Build.VERSION.SDK_INT >= 30 && prefs.recentAdded) out.add(Opt(getString(R.string.recent_title), Roots.RECENT_ID))
+            if (prefs.driveRecentAdded) out.add(Opt(getString(R.string.drive_recent_title), Roots.DRIVE_RECENT_ID))
             for (r in roots) out.add(Opt(r.alias, r.id))
             // Subpasta escolhida pelo ⋮ da pasta: mostrada com o caminho.
             val cur = prefs.startRoot

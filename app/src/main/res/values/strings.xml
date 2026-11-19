@@ -148,6 +148,8 @@
 
     <!-- Google Drive -->
     <string name="add_drive_folder">Adicionar pasta do Google Drive</string>
+    <string name="add_recent_menu">Adicionar Recentes</string>
+    <string name="add_drive_recent_menu">Adicionar Recentes do Drive</string>
     <string name="add_folder_from">Adicionar pasta de</string>
     <string name="refreshing">Atualizando a pasta</string>
     <string name="all_files_title">Acesso às pastas do aparelho</string>
@@ -158,6 +160,9 @@
     <string name="local_pick_hint">Escolha um armazenamento</string>
     <string name="source_local_device">Este aparelho</string>
     <string name="source_drive">Google Drive</string>
+    <string name="add_recent_local">Recentes</string>
+    <string name="add_recent_drive">Recentes do Drive</string>
+    <string name="all_files_denied_recent">Sem o acesso a todos os arquivos, a pasta Recentes não pode ser mostrada.</string>
     <string name="drive_disconnected_tap">Conta Google desconectada · toque para conectar</string>
     <string name="drive_connect">Conectar conta Google</string>
     <string name="drive_connect_msg">Conecte sua conta Google para acessar as pastas do Drive. O app pede acesso de leitura e escrita (para renomear, mover, copiar, apagar e enviar arquivos).</string>
@@ -416,6 +421,8 @@
     <string name="recent_title">Recentes</string>
     <string name="recent_meta">Arquivos novos do aparelho · últimos %1$d dias</string>
     <string name="recent_meta_type">%1$s · últimos %2$d dias</string>
+    <string name="drive_recent_title">Recentes do Drive</string>
+    <string name="drive_recent_meta">Arquivos novos do Drive · últimos %1$d dias</string>
     <string name="recent_filter">Filtrar</string>
     <string name="recent_all">Todos os tipos</string>
     <string name="recent_images">Fotos</string>
@@ -432,5 +439,4 @@
     <string name="sub_opening">Ao abrir o app</string>
     <string name="start_folder">Pasta inicial</string>
     <string name="start_folder_none">Lista de pastas</string>
-    <string name="show_recent">Mostrar a pasta Recentes</string>
 </resources>

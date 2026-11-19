@@ -117,10 +117,20 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         get() = sp.getBoolean("internal_docs", true)
         set(v) = sp.edit().putBoolean("internal_docs", v).apply()
 
-    /** Pasta virtual "Recentes" no topo da lista de pastas. */
-    var showRecent: Boolean
-        get() = sp.getBoolean("show_recent", true)
-        set(v) = sp.edit().putBoolean("show_recent", v).apply()
+    /**
+     * Pastas virtuais "Recentes" e "Recentes do Drive" adicionadas pelo usuário (Adicionar pasta).
+     * Nada vem de fábrica. Quem atualiza de uma versão anterior mantém as que já via (a antiga
+     * opção "Mostrar a pasta Recentes" com a permissão ou a conta já liberadas).
+     */
+    var recentAdded: Boolean
+        get() = if (sp.contains("recent_added")) sp.getBoolean("recent_added", false)
+        else (sp.getBoolean("show_recent", true) && Roots.hasAllFiles()).also { recentAdded = it }
+        set(v) = sp.edit().putBoolean("recent_added", v).apply()
+
+    var driveRecentAdded: Boolean
+        get() = if (sp.contains("drive_recent_added")) sp.getBoolean("drive_recent_added", false)
+        else (sp.getBoolean("show_recent", true) && driveConnected).also { driveRecentAdded = it }
+        set(v) = sp.edit().putBoolean("drive_recent_added", v).apply()
 
     /** Filtro da pasta Recentes: tipo ([RecentSource.ALL]...) e período em dias. */
     var recentType: Int
