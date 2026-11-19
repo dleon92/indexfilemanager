@@ -440,8 +440,8 @@ class SearchFragment : Fragment(R.layout.fragment_search), MainActivity.KeyTarge
     }
 
     private fun open(item: FileItem) {
-        if (item.kind == FileItem.KIND_IMAGE && prefs.internalViewer) {
-            val photos = adapter.items.filter { it.kind == FileItem.KIND_IMAGE }
+        if (item.inViewer && prefs.internalViewer) {
+            val photos = adapter.items.filter { it.inViewer }
             val start = photos.indexOfFirst { it.id == item.id && it.rootId == item.rootId }
             if (start >= 0) {
                 app.index.files.ui.viewer.ViewerFragment.open(requireActivity(), photos, start, ::sourceFor) onClose@{ last ->
@@ -454,6 +454,9 @@ class SearchFragment : Fragment(R.layout.fragment_search), MainActivity.KeyTarge
                 return
             }
         }
+        if (item.inPlayer && prefs.internalPlayer &&
+            app.index.files.ui.video.VideoFragment.open(requireActivity(), item, sourceFor(item), emptyList())
+        ) return
         if (prefs.internalDocs && app.index.files.ui.doc.DocViewerFragment.open(requireActivity(), item, sourceFor(item))) return
         FileOpener.open(this, sourceFor(item), item)
     }

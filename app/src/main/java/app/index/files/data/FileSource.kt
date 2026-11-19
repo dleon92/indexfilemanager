@@ -110,6 +110,12 @@ class FileItem(
         else -> KIND_FILE
     }
 
+    /** Foto que o visualizador do app mostra (GIF animado vai para outro app: aqui ficaria parado). */
+    val inViewer get() = kind == KIND_IMAGE && ext != "gif"
+
+    /** Vídeo que o player do app toca (WMV/ASF não: sem leitor nem decodificador no Android). */
+    val inPlayer get() = kind == KIND_VIDEO && ext != "wmv" && ext != "asf"
+
     companion object {
         const val KIND_DIR = 0
         const val KIND_IMAGE = 1

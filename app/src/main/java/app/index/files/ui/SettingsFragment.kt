@@ -56,6 +56,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         switch(view, R.id.show_hidden, prefs.showHidden) { prefs.showHidden = it }
         switch(view, R.id.internal_viewer, prefs.internalViewer) { prefs.internalViewer = it }
         switch(view, R.id.internal_docs, prefs.internalDocs) { prefs.internalDocs = it }
+        switch(view, R.id.internal_player, prefs.internalPlayer) { prefs.internalPlayer = it }
+        val seekOpts = intArrayOf(5, 10, 15, 30, 60)
+        val seekLabels = seekOpts.map { getString(R.string.seconds_n, it) }.toTypedArray()
+        choiceRow(view, R.id.row_seek_forward, R.string.seek_forward_title, seekLabels,
+            { seekOpts.indexOf(prefs.seekForwardSec).coerceAtLeast(0) }) { prefs.seekForwardSec = seekOpts[it] }
+        choiceRow(view, R.id.row_seek_back, R.string.seek_back_title, seekLabels,
+            { seekOpts.indexOf(prefs.seekBackSec).coerceAtLeast(0) }) { prefs.seekBackSec = seekOpts[it] }
         bindStartFolder(view)
         // Sobre: versão instalada (do pacote, sem BuildConfig).
         val ctx = requireContext()

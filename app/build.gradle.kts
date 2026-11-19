@@ -20,8 +20,8 @@ android {
         applicationId = "app.index.files"
         minSdk = 26
         targetSdk = 37
-        versionCode = 26
-        versionName = "0.16.0"
+        versionCode = 27
+        versionName = "0.17.0"
     }
 
     signingConfigs {
@@ -75,4 +75,6 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.recyclerview)
     implementation(libs.play.services.auth)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
 }

@@ -112,6 +112,19 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         get() = sp.getBoolean("internal_viewer", true)
         set(v) = sp.edit().putBoolean("internal_viewer", v).apply()
 
+    /** Vídeos no player do app (falso: app externo, como antes). */
+    var internalPlayer: Boolean
+        get() = sp.getBoolean("internal_player", true)
+        set(v) = sp.edit().putBoolean("internal_player", v).apply()
+
+    /** Segundos que dois toques avançam (direita) e voltam (esquerda) no player. */
+    var seekForwardSec: Int
+        get() = sp.getInt("seek_forward", 10)
+        set(v) = sp.edit().putInt("seek_forward", v).apply()
+    var seekBackSec: Int
+        get() = sp.getInt("seek_back", 10)
+        set(v) = sp.edit().putInt("seek_back", v).apply()
+
     /** PDFs, Office, LibreOffice e textos no leitor do app (falso: app externo, como antes). */
     var internalDocs: Boolean
         get() = sp.getBoolean("internal_docs", true)

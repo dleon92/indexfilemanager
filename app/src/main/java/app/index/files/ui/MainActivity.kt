@@ -281,6 +281,7 @@ class MainActivity : AppCompatActivity() {
             // Visualizador aberto: ele tem a vez (setas trocam de foto) e nada vaza para trás.
             app.index.files.ui.viewer.ViewerFragment.find(this)?.let { return it.onKey(event) || super.dispatchKeyEvent(event) }
             app.index.files.ui.doc.DocViewerFragment.find(this)?.let { return it.onKey(event) || super.dispatchKeyEvent(event) }
+            app.index.files.ui.video.VideoFragment.find(this)?.let { return it.onKey(event) || super.dispatchKeyEvent(event) }
             val top = supportFragmentManager.findFragmentById(R.id.content)
             if ((top as? KeyTarget)?.onKey(event) == true) return true
             val typing = currentFocus is EditText
@@ -399,6 +400,7 @@ class MainActivity : AppCompatActivity() {
         VaultIndex.dropAll()
         app.index.files.ui.viewer.ViewerFragment.find(this)?.close()
         app.index.files.ui.doc.DocViewerFragment.find(this)?.close()
+        app.index.files.ui.video.VideoFragment.find(this)?.close()
         ThumbnailManager.get(this).dropDecrypted()
         if (!supportFragmentManager.isStateSaved) {
             supportFragmentManager.popBackStack(VAULT_STACK, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)

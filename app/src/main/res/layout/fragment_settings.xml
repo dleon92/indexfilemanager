@@ -136,6 +136,19 @@
             style="@style/IndexRow"
             android:text="@string/internal_docs" />
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/internal_player"
+            style="@style/IndexRow"
+            android:text="@string/internal_player" />
+
+        <include
+            android:id="@+id/row_seek_forward"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_seek_back"
+            layout="@layout/row_setting" />
+
         <!-- ===== Abrir e compartilhar ===== -->
         <View style="@style/IndexDivider" />
 

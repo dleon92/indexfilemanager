@@ -654,9 +654,9 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
     }
 
     private fun open(item: FileItem) {
-        if (item.kind == FileItem.KIND_IMAGE && prefs.internalViewer) {
-            // Só as fotos da lista na tela (na ordem dela); vídeos seguem abrindo como antes.
-            val photos = adapter.items.filter { it.kind == FileItem.KIND_IMAGE }
+        if (item.inViewer && prefs.internalViewer) {
+            // Só as fotos da lista na tela (na ordem dela); vídeos vão para o player.
+            val photos = adapter.items.filter { it.inViewer }
             val start = photos.indexOfFirst { it.id == item.id }
             if (start >= 0) {
                 app.index.files.ui.viewer.ViewerFragment.open(requireActivity(), photos, start, { source }) onClose@{ last ->
@@ -669,6 +669,10 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
                 return
             }
         }
+        // Vídeos: player do app (legendas com o mesmo nome vêm da pasta).
+        if (item.inPlayer && prefs.internalPlayer &&
+            app.index.files.ui.video.VideoFragment.open(requireActivity(), item, source, adapter.items)
+        ) return
         // Documentos (PDF, Office, LibreOffice, textos): leitor do app.
         if (prefs.internalDocs && app.index.files.ui.doc.DocViewerFragment.open(requireActivity(), item, source)) return
         FileOpener.open(this, source, item)

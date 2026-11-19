@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.16.0 (`dist/index-v0.16.0-fase13.apk`, "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.17.0 (`dist/index-v0.17.0-fase13.apk`, player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -647,13 +647,36 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   motivo e deixa escolher outra pasta. Cancelar ou voltar também retorna ao app de origem.
 - Recentes não recebe arquivos (a barra não aparece). Compartilhamento só de texto: avisa e fecha.
 - Testado no S23.
-## Dependências
+
+## Player de vídeo (v0.17.0)
+
+- `ui/video/VideoFragment` (Media3/ExoPlayer, no `viewer_host` como o visualizador de fotos).
+  Arquivo local pelo caminho, SAF pela Uri do documento, Drive pelo link de streaming do app.
+- **Gestos**: toque mostra/esconde os controles (somem em 3 s); dois toques à direita/esquerda
+  avançam/voltam (10 s por padrão, 5 a 60 s nas Configurações; toques seguidos somam); segurar
+  acelera para 2x até soltar. Teclado: espaço, setas, J/K/L, Esc.
+- **Linha do tempo com ajuste fino** (`FineSeekBar`): tocar pula; arrastando, quanto mais o dedo sobe
+  acima da barra, mais devagar a posição anda (1, 1/2, 1/4, 1/8, 1/16), com busca do quadro exato e
+  tempo com décimos.
+- **Trilhas**: escolha de áudio (com idioma, canais e codec) e de legenda (com "Desligada").
+  Legendas embutidas (SRT, ASS/SSA, VTT, TTML, PGS, VobSub, CC) e externas com o mesmo nome do
+  vídeo (`Filme.srt`, `Filme.pt-BR.srt`; .srt/.vtt/.ass/.ssa/.ttml).
+- **Formatos**: contêineres MP4/M4V/MOV, MKV, WebM, AVI, FLV, TS/M2TS, 3GP, OGG; vídeo H.264,
+  H.265, VP8, VP9, AV1, MPEG-4 Part 2 (pelos decodificadores do aparelho, com fallback para o de
+  software); áudio AAC, MP3, Opus, Vorbis, FLAC, PCM, AC-3/E-AC-3. Sem DTS/TrueHD/WMA. Formato não
+  suportado: aviso com "Abrir em outro app".
+- **Para outro app direto**: WMV/ASF (sem leitor nem decodificador no Android; só com FFmpeg ou
+  libVLC, de 3 a 30 MB) e GIF (o visualizador mostraria parado; também sai da sequência de fotos).
+- Pausa ao sair da tela, ao bloquear e ao desconectar o fone. Chave "Abrir vídeos no player do
+  Index" (ligada). Vídeos da pesquisa também abrem no player.
+- APK: +525 KB (1.047 KB para 1.572 KB). Testado no S23.## Dependências
 
 | Dependência | Motivo |
 |---|---|
 | `androidx.appcompat:appcompat` 1.7.1 | Tema DayNight e `AppCompatDelegate.setDefaultNightMode` em API 26+. Traz `fragment`, `activity` e `core` transitivamente (Activity única com Fragments, seletor SAF via Activity Result). |
 | `androidx.recyclerview:recyclerview` 1.4.0 | Grade/lista com reciclagem de views e `DiffUtil` (exigidos pela especificação). |
-| `com.google.android.gms:play-services-auth` 22.0.0 | OAuth do Drive (`AuthorizationClient`). Única dependência pesada permitida; +142 KB no APK após R8. |
+| `com.google.android.gms:play-services-auth` 22.0.0 | OAuth do Drive (`AuthorizationClient`). +142 KB no APK após R8. |
+| `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
 Nenhuma outra. Kotlin vem embutido no AGP 9.
 
@@ -699,3 +722,4 @@ Nenhuma outra. Kotlin vem embutido no AGP 9.
 | v0.14.3-fase13 (sem nome do autor no Sobre) | 1.042.165 bytes (1.018 KB) | — |
 | v0.15.0-fase13 (Recentes do Drive, Recentes adicionadas, posição da lista) | 1.045.357 bytes (1.021 KB) | — |
 | v0.16.0-fase13 (Salvar no Index pelo compartilhar) | 1.046.909 bytes (1.022 KB) | — |
+| v0.17.0-fase13 (player de vídeo com Media3) | 1.572.249 bytes (1.535 KB) | — |

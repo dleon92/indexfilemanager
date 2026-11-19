@@ -115,6 +115,23 @@
     <string name="default_sort">Ordenação padrão</string>
     <string name="show_hidden">Mostrar arquivos ocultos</string>
     <string name="internal_viewer">Abrir fotos no visualizador do Index</string>
+    <string name="internal_player">Abrir vídeos no player do Index</string>
+    <string name="seek_forward_title">Dois toques à direita avançam</string>
+    <string name="seek_back_title">Dois toques à esquerda voltam</string>
+    <string name="seconds_n">%d segundos</string>
+    <string name="video_audio_track">Trilha de áudio</string>
+    <string name="video_subtitle_track">Legenda</string>
+    <string name="video_play_pause">Reproduzir ou pausar</string>
+    <string name="video_subs_off">Desligada</string>
+    <string name="video_stereo">estéreo</string>
+    <string name="video_track_n">Faixa %d</string>
+    <string name="video_fast">2× ▸▸</string>
+    <string name="video_forward">+%d s</string>
+    <string name="video_back">−%d s</string>
+    <string name="video_fine">%1$s · ajuste fino 1/%2$d</string>
+    <string name="video_error_title">Não deu para reproduzir</string>
+    <string name="video_error_msg">Este vídeo usa um formato ou codec que o aparelho não reproduz, ou o arquivo não pôde ser lido. Dá para tentar em outro app.</string>
+    <string name="video_open_other">Abrir em outro app</string>
     <string name="internal_docs">Abrir documentos no leitor do Index (PDF, Office, LibreOffice, textos)</string>
 
     <!-- Leitor de documentos -->
