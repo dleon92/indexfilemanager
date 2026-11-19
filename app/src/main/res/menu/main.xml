@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_preload_status"
+        android:icon="@drawable/ic_bolt"
+        android:orderInCategory="1"
+        android:title="@string/preload_active"
+        android:visible="false"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_search_all"
+        android:icon="@drawable/ic_search"
+        android:title="@string/search"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_manage"
+        android:title="@string/manage_folders"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_protected"
+        android:title="@string/protected_folders"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="1000"
+        android:title="@string/settings"
+        app:showAsAction="never" />
+</menu>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pedido de thumb pendente associado a uma ImageView. -->
+    <item name="thumb_request" type="id" />
+    <item name="thumb_shown" type="id" />
+    <item name="ctx_open" type="id" />
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fundo das células da grade/lista. -->
+    <attr name="tileBackground" format="reference|color" />
+
+    <!-- Paleta do tema (fase 11). Cada Theme.Index.<id> define todas. As cores
+         @color/bg, @color/text etc. são seletores que apontam para estes atributos. -->
+    <attr name="idxBg" format="color" />
+    <attr name="idxSurface" format="color" />
+    <attr name="idxToolbar" format="color" />
+    <attr name="idxNavBar" format="color" />
+    <attr name="idxText" format="color" />
+    <attr name="idxTextSecondary" format="color" />
+    <attr name="idxAccent" format="color" />
+    <attr name="idxOnAccent" format="color" />
+    <attr name="idxSelection" format="color" />
+    <attr name="idxWarning" format="color" />
+</resources>

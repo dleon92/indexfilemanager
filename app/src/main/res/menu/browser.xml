@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search"
+        android:title="@string/search"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_random"
+        android:icon="@drawable/ic_dice"
+        android:title="@string/random"
+        app:actionLayout="@layout/action_random"
+        app:showAsAction="always" />
+
+    <!-- Só na pasta Recentes: tipo de arquivo e período. -->
+    <item
+        android:id="@+id/action_recent_filter"
+        android:icon="@drawable/ic_filter"
+        android:title="@string/recent_filter"
+        android:visible="false"
+        app:showAsAction="always">
+        <menu>
+            <group
+                android:id="@+id/group_recent_type"
+                android:checkableBehavior="single">
+                <item android:id="@+id/recent_all" android:title="@string/recent_all" />
+                <item android:id="@+id/recent_images" android:title="@string/recent_images" />
+                <item android:id="@+id/recent_videos" android:title="@string/recent_videos" />
+                <item android:id="@+id/recent_audio" android:title="@string/recent_audio" />
+                <item android:id="@+id/recent_docs" android:title="@string/recent_docs" />
+                <item android:id="@+id/recent_apks" android:title="@string/recent_apks" />
+            </group>
+            <group
+                android:id="@+id/group_recent_days"
+                android:checkableBehavior="single">
+                <item android:id="@+id/recent_7" android:title="@string/recent_7" />
+                <item android:id="@+id/recent_30" android:title="@string/recent_30" />
+                <item android:id="@+id/recent_90" android:title="@string/recent_90" />
+            </group>
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/action_view_mode"
+        android:icon="@drawable/ic_view_list"
+        android:title="@string/view_list"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_sort"
+        android:icon="@drawable/ic_sort"
+        android:title="@string/sort"
+        app:showAsAction="always">
+        <menu>
+            <group
+                android:id="@+id/group_sort_by"
+                android:checkableBehavior="single">
+                <item android:id="@+id/sort_name" android:title="@string/sort_name" />
+                <item android:id="@+id/sort_size" android:title="@string/sort_size" />
+                <item android:id="@+id/sort_type" android:title="@string/sort_type" />
+                <item android:id="@+id/sort_date" android:title="@string/sort_date" />
+            </group>
+            <group android:id="@+id/group_sort_opts" android:checkableBehavior="all">
+                <item android:id="@+id/sort_desc" android:title="@string/sort_desc" />
+                <item android:id="@+id/sort_dirs_first" android:title="@string/folders_first" />
+            </group>
+            <item android:id="@+id/sort_reset" android:title="@string/sort_use_default" />
+        </menu>
+    </item>
+
+    <item
+        android:id="@+id/action_preload"
+        android:title="@string/preload_all"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_new_folder"
+        android:title="@string/new_folder"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_upload"
+        android:title="@string/upload_files"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_select"
+        android:title="@string/select"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_set_start"
+        android:title="@string/start_folder_menu"
+        app:showAsAction="never" />
+
+    <!-- Tamanho da grade (também por pinça, Ctrl + roda do mouse e Ctrl +/−). -->
+    <item
+        android:id="@+id/action_bigger"
+        android:title="@string/thumbs_bigger"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_smaller"
+        android:title="@string/thumbs_smaller"
+        app:showAsAction="never" />
+</menu>

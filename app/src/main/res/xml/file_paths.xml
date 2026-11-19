@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path name="drive" path="drive_open/" />
+    <!-- Pastas lidas pelo caminho (Download com "Acesso a todos os arquivos"). -->
+    <external-path name="ext" path="." />
+</paths>

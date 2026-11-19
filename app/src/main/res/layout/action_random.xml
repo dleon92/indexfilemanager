@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Botão "Aleatório" da barra: toque sorteia, toque longo abre as opções. -->
+<ImageButton xmlns:android="http://schemas.android.com/apk/res/android"
+    style="?attr/actionButtonStyle"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:contentDescription="@string/random"
+    android:src="@drawable/ic_dice" />

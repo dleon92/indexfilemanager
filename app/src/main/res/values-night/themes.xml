@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Janela de abertura no modo escuro: tema escuro padrão. -->
+    <style name="Theme.Index" parent="Theme.Index.grafite" />
+</resources>

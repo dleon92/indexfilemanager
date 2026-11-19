@@ -1,0 +1,672 @@
+# Index File Manager
+
+Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
+
+> Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
+> com a v0.13.1; versão atual v0.14.3 (`dist/index-v0.14.3-fase13.apk`, leitor de documentos: PDF, Word (docx e
+> doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
+> 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
+
+**O que faz**: pastas locais (qualquer uma, inclusive Download) e do Google Drive numa grade de miniaturas que abre em
+~0,15 s; pesquisa instantânea por índice local; streaming de vídeos do Drive para qualquer
+player; visualizador de fotos próprio; edição (criar, renomear, copiar, mover, apagar, entre
+local e Drive); bloqueio do app e pastas protegidas cifradas; seleção aleatória; pré-carga de
+miniaturas; leitor de documentos (PDF, Office, LibreOffice, texto); 20 temas; tablet com dois
+painéis, teclado e mouse.
+
+## Compilar
+
+Requisitos: JDK 17, Android SDK com `platforms;android-37` e `build-tools;37.0.0`
+(`local.properties` com `sdk.dir=...`).
+
+```
+gradlew.bat assembleRelease
+```
+
+APK em `app/build/outputs/apk/release/app-release.apk`, assinado pela chave em `signing/`
+(`index.keystore` + `keystore.properties`; desde a v0.13.6 é uma cópia da chave de debug desta
+máquina, SHA-1 `B5:19:2C:…:60:58`, a mesma cadastrada no OAuth do Drive). **Guarde uma cópia de
+`signing/` fora deste PC**: sem ela não dá para atualizar o app instalado. Sem `signing/`, o
+release cai na chave de debug. Snapshots de cada fase ficam em `dist/`.
+
+## Estrutura
+
+```
+app/src/main/java/app/index/files/
+  IndexApp.kt        aplica o modo claro/escuro salvo antes de qualquer Activity (sem "piscar")
+  Bg.kt              pool de 2 threads + Handler da main (sem coroutines)
+  ui/                MainActivity (única) + Fragments: Home, ManageFolders, Browser, Search, Settings,
+                     DrivePicker, LocalPicker, Protected. PullRefresh (puxar para atualizar). FlingBooster + FastScroller + ScrollLabels (rolagem rápida),
+                     GridZoom (pinça), DragSelect, Keys, FileOpener, OpenWith (listas próprias de apps),
+                     Share, FileEdit (Clip "Colar aqui", OpRunner com progresso), Auth (bloqueio), Themes
+  ui/viewer/         ViewerFragment, ZoomImageView (zoom normalizado), ViewerLoader (base + recorte por região)
+  ui/doc/            DocViewerFragment (leitor), DocKind, DocRender; PdfView (PdfRenderer com zoom);
+                     TextDocs (txt, md, csv, rtf), Zip + Ooxml (xlsx/pptx), Docx (Word com formatação), Odf (odt/ods/odp),
+                     Ole2 + Legacy (doc/xls/ppt), Sheet (tabela de planilha), Html (montagem e escape)
+  data/FileOps.kt    criar pasta, renomear, apagar, copiar/mover (local ↔ Drive), enviar
+  data/              AppDb (SQLite puro), Roots, LocalSource (SAF), FsSource (caminho), RecentSource (Recentes), VaultSource, ListingCache, Indexer,
+                     Search, Sorting, RandomPick, Protection, Prefs
+  data/drive/        DriveAuth (AuthorizationClient), DriveApi (REST v3 via HttpURLConnection + org.json),
+                     DriveSource, DriveStreamProvider + StreamService (streaming)
+  security/          AppLock, Vault (cofre AES-GCM no Keystore), Crypto, AppReset
+  thumbs/            ThumbnailManager (memória+disco+filas), DiskStore (WebP, LRU), VaultThumbs, Preload, Decode
+```
+
+## Permissões
+
+| Permissão | Por quê |
+|---|---|
+| `INTERNET` | Google Drive (listagem, miniaturas, streaming, edição). |
+| `ACCESS_NETWORK_STATE` | Pré-carga "só no Wi-Fi". |
+| `FOREGROUND_SERVICE` + `_MEDIA_PLAYBACK` | Mantém o streaming do Drive vivo enquanto o player (ou o app que recebeu um compartilhamento) lê. |
+| `FOREGROUND_SERVICE_DATA_SYNC` | Cópias/movimentações longas em segundo plano. |
+| `USE_BIOMETRIC` | Desbloqueio por digital/rosto. |
+| `MANAGE_EXTERNAL_STORAGE` | "Acesso a todos os arquivos" (Android 11+), ativado pelo usuário: adicionar pastas que o seletor do sistema recusa (Download inteira, raiz do armazenamento, raiz do cartão). |
+
+Acesso amplo só se o usuário ativar: "Adicionar pasta local" (Android 11+) explica e abre a tela
+do Android; recusada, cai no seletor do sistema (SAF). Pastas adicionadas antes continuam via SAF.
+Android/data e Android/obb seguem inacessíveis (bloqueio do próprio Android). `<queries>`
+(VIEW, SEND, SEND_MULTIPLE) declara quais apps o "Abrir com…" e o "Compartilhar" listam; não é
+permissão.
+
+## Decisões de leveza
+
+- Três dependências só (tabela em "Dependências"); sem coroutines, Compose, Room, Glide/Coil,
+  OkHttp, Retrofit, navegação ou preferências do AndroidX. R8 + encolhimento de recursos.
+- Activity única com Fragments simples; giro de tela sem recriar a Activity.
+- Drive por REST puro (`HttpURLConnection` + `org.json`), sem a biblioteca do Drive.
+- Miniaturas: memória (≤ 32 MB) → disco WebP → geração, filas LIFO canceláveis; RGB_565.
+- Visualizador: só 3 fotos na memória, na resolução da tela; nitidez do zoom por região.
+
+- Listagem local com **uma única query** `DocumentsContract.buildChildDocumentsUriUsingTree`
+  e projeção de 5 colunas; sem `DocumentFile`.
+- Chave de ordenação (nome sem acento, minúsculo) calculada uma vez por item; caminho rápido
+  para nomes ASCII. Ordem natural própria (`NaturalOrder`), sem `Collator`.
+- Trocar ordenação reordena a lista em memória (não reconsulta o SAF). Recarregar a mesma
+  pasta usa `DiffUtil` calculado em segundo plano; trocar de pasta substitui direto.
+- Um único adapter e um único `GridLayoutManager` (lista = 1 coluna); células com 2 níveis
+  de layout; `setHasFixedSize`; pool de views ampliado para a grade.
+- Configurações com layout próprio (sem `androidx.preference`), ícones 100% vetoriais,
+  só recursos em português (`localeFilters`).
+
+## Achado de desempenho (fase 1)
+
+Pasta com 5.006 itens no SM-S911B (Android 17):
+
+| Etapa | Tempo |
+|---|---|
+| Query ao `ExternalStorageProvider` (sistema) | **~4,4 s** |
+| Leitura do cursor + normalização + ordenação (app) | ~20 ms |
+| Rolagem (fling) | 99% dos frames ≤ 14 ms; 0,25% janky |
+
+O custo está no provedor do sistema, que consulta cada arquivo individualmente pelo FUSE;
+nenhuma projeção ou opção de query reduz isso.
+
+**Solução adotada: cache de listagem no SQLite** (tabelas `files` e `folders_cached`, que
+serão o índice de busca da fase 3). Ao abrir uma pasta:
+
+1. a listagem em cache é exibida imediatamente;
+2. o SAF é consultado em segundo plano; o resultado é comparado com `DiffUtil` e só é
+   aplicado/regravado se algo mudou.
+
+| Abertura da pasta de 5.006 itens | Tempo até exibir |
+|---|---|
+| Primeira visita (sem cache) | ~4,5 s (indicador de carregamento) |
+| Visitas seguintes | **19–22 ms** |
+| Após reiniciar o app | **41 ms** |
+
+O cache guarda também arquivos ocultos (o filtro é aplicado na exibição) e é apagado ao
+remover ou readicionar a pasta.
+
+## Miniaturas (fase 2)
+
+- **Memória:** `LruCache` por bytes (1/8 do heap Java, **com teto de 32 MB**), bitmaps em
+  RGB_565 quando opacos. *Desvio aprovado da especificação:* o teto existe porque cada bitmap
+  vivo também mantém uma textura equivalente na GPU; com 1/8 (64 MB no S23) o custo dobra.
+- **Disco:** `cacheDir/thumbs` ou `filesDir/thumbs` (configurável), um WebP q75 por arquivo,
+  lado maior 256 px. Chave = FNV-1a 64 de `origem|id|data_mod|tamanho` (arquivo alterado ⇒
+  chave nova ⇒ regeneração automática). Arquivo de 0 byte marca "sem miniatura possível".
+  Limite configurável com remoção LRU (data de modificação atualizada nas leituras).
+- **Geração:** fotos via `ImageDecoder` com `setTargetSize` (API 28+; aplica EXIF e suporta
+  HEIC) ou `BitmapFactory` + `inSampleSize` + EXIF (API 26–27). Vídeos via
+  `ContentResolver.loadThumbnail` (API 29+) com fallback para `MediaMetadataRetriever`.
+  *Desvio da especificação:* para fotos não uso `loadThumbnail`, porque no
+  `ExternalStorageProvider` ele tende a devolver a miniatura EXIF (~160 px), borrada numa
+  célula de ~360 px.
+- **Filas:** pools LIFO (disco: 2 threads; geração: 2 threads, baixa prioridade); pedido
+  cancelado ao reciclar a view; pré-geração opcional numa thread de prioridade mínima.
+- **Selo de vídeo** desenhado no `onDraw` da própria ImageView (sem layout extra).
+
+Medições na pasta DCIM/Camera (910 fotos e vídeos), SM-S911B:
+
+| Situação | Resultado |
+|---|---|
+| Geração (cache vazio) | foto ~90 ms, vídeo ~180 ms (2 em paralelo); 1ª tela completa em ~0,6 s |
+| Reabrir na mesma sessão | 0 leituras: tudo da memória, no mesmo frame |
+| Reabrir após reiniciar o app | leitura do disco 1,9 ms em média (máx. 7 ms), 0 regenerações |
+| Fling pela pasta inteira gerando | 0,04% frames janky, p99 14 ms; 895 pedidos, só 234 gerados (resto cancelado) |
+| Fling com tudo em cache | 0,04% janky, p99 14 ms |
+| RAM (PSS) | 51 MB na tela inicial; 78 MB na 1ª tela da pasta; ~218 MB após rolar as 910; 37 MB em segundo plano |
+
+Composição da RAM após rolar a pasta inteira (com teto de 32 MB, `dumpsys meminfo`/`gfxinfo`):
+
+| Parte | Tamanho | Controlável pelo app? |
+|---|---|---|
+| Bitmaps das thumbs (`Bitmap (malloced)`) | 32,7 MB | Sim: é o teto do LruCache (antes ~60 MB) |
+| Texturas da GPU desses bitmaps (HWUI) | 32,6 MB (381 entradas; 47 MB do cache GPU purgeável) | Indiretamente, pelo teto acima |
+| Buffers da janela (4 × 1080×2340, 120 Hz) | ~40 MB | Não: custo do sistema para qualquer app em tela cheia |
+| Demais pools do driver gráfico (GL/EGL/Gfx) | restante de "Graphics" | Não; liberados ao ir para segundo plano |
+
+Com o teto de 32 MB a rolagem seguiu fluida (0,08% janky, p99 14 ms).
+
+## Índice e pesquisa (fase 3)
+
+- **Tabela única** `files` (raiz, doc_id, pasta-pai, caminho relativo, nome, nome normalizado,
+  mime, tamanho, data, é_pasta) serve ao cache de navegação e à busca. A origem vem de
+  `roots.source`; o `doc_id` é o id remoto no Drive (fase 5).
+- **Indexador** (`Indexer`): thread única de prioridade mínima, sem WorkManager. Roda 1,5 s
+  após abrir o app, ao adicionar/readicionar uma pasta e em "Reindexar". Percorre em largura;
+  **incremental** pela data de modificação de cada pasta (se não mudou, os filhos vêm do
+  índice). Pastas que sumiram são removidas do índice (`prune`). Atualiza a contagem de itens.
+- **Busca:** `LIKE '%termo%'` sobre `name_norm` (sem acento, minúsculo), escopo pasta atual
+  (prefixo de `parent_path`) ou todas, filtro Fotos/Vídeos por mime, ocultos respeitados.
+  O SQL ordena e limita a 5.000; a ordem exata (natural, extensão) é refeita em memória com o
+  mesmo comparador da navegação. Debounce de 250 ms.
+- Resultados em grade ou lista com caminho relativo; toque longo → "Abrir" / "Ir para a pasta"
+  (o caminho de ids é reconstruído subindo pelo índice).
+- Remover uma pasta apaga suas linhas de `files`; a busca também faz JOIN com `roots`.
+
+Medições (21 mil arquivos em 11 pastas, SM-S911B):
+
+| Operação | Tempo |
+|---|---|
+| Primeira indexação (20.004 arquivos, 10 pastas) | 14,6 s em segundo plano (custo do SAF) |
+| Reindexação incremental sem mudanças | 73 ms (0 consultas ao SAF) |
+| Busca, termo raro (1–11 resultados) | 8–17 ms |
+| Busca, termo comum (5.000+ resultados, truncado) | 27–36 ms |
+| Filtros Fotos / Vídeos (Camera) | 13 / 12 ms (781 + 129 = 910 ✓) |
+
+## Rolagem rápida (fase 5)
+
+- **Fling acelerado** (`FlingBooster`): flings seguidos na mesma direção (intervalo < 0,9 s)
+  multiplicam a distância natural 1× → 1,5× → 2× → 4× → 6× → 8× (suavizada na v0.10.2; antes
+  1 → 1,8 → 3 → 5 → 8). Um fling isolado é idêntico ao do sistema.
+- **Barra arrastável** (`FastScroller`): aparece ao rolar listas com mais de ~4 telas; tocar/arrastar
+  na faixa da direita pula direto para a posição, com balão mostrando a letra/mês/tamanho/tipo conforme a ordenação.
+
+Medido na pasta de 5.006 itens (posição alcançada a partir do topo):
+
+| Gesto | Itens percorridos |
+|---|---|
+| 1 fling | 81 |
+| 2 flings seguidos | 214 |
+| 3 flings seguidos | 376 |
+| 4 flings seguidos | 615 |
+| 5 flings seguidos | 1.049 (2,6× o que 5 flings normais dariam) |
+| Barra: arrastar até o fim / topo | instantâneo (arquivo1 / topo) |
+
+## Google Drive (fase 5)
+
+- Login só com `AuthorizationClient` (play-services-auth), escopo `drive.readonly`. Sem Credential Manager:
+  o e-mail vem da própria API (`about`), o que dispensa `androidx.credentials` + `googleid`.
+- Token em memória (~45 min); 401 ⇒ `clearToken` + nova autorização silenciosa; 403 de cota / 429 / 5xx ⇒
+  backoff exponencial com jitter (até 6 tentativas).
+- `DriveSource` implementa o mesmo `FileSource` da pasta local: cache de listagem, índice/busca, ordenação,
+  miniaturas e rolagem são os mesmos. Miniaturas vêm do `thumbnailLink` do Drive (`=s256`), sem baixar o
+  arquivo, e vão para o mesmo cache WebP. Atalhos do Drive abrem o alvo (com proteção contra ciclos).
+- Abrir (configurável): **transmitir** (padrão), baixar para `cache/drive_open` (24 h, via `FileProvider`)
+  ou abrir no Google Drive. Documentos Google sempre abrem no Drive.
+- Indexação: o Drive não tem data de pasta confiável, então é relistado inteiro, no máximo a cada 12 h na
+  abertura do app (sempre ao adicionar ou em "Reindexar"). Com falha de rede não há poda do índice.
+- Sem rede: a pasta continua navegável pelo cache, com aviso. Desconectar revoga o acesso e apaga o índice do Drive.
+
+### Streaming para outros apps (VLC, player nativo…)
+
+- `DriveStreamProvider` entrega um `content://` cujo descritor tem acesso aleatório
+  (`StorageManager.openProxyFileDescriptor`, API 26+). Nada é gravado em disco.
+- **Leitura em blocos com download antecipado (v0.5.3):** blocos de 128 KB num cache em memória de até
+  32 MB por arquivo aberto (só durante o streaming). Até 3 "faixas" baixam em segundo plano, cada uma numa
+  conexão sequencial (`Range: bytes=N-`), mantendo 8 MB à frente da última leitura da sua região; um salto do
+  player reposiciona a faixa usada há mais tempo. Blocos já no cache não são baixados de novo.
+  Motivo: o player nativo da Samsung lê áudio e vídeo em pontos alternados e relê trechos; servido sob demanda
+  numa só conexão, cada alternância virava uma requisição (~45 em 50 s) e o vídeo congelava a cada ~5 s.
+- Faixas, conexões **e o cache** liberados após 20 s sem leituras (vídeo pausado; o VLC segura o descritor até o
+  processo dele morrer) e recriados na próxima leitura (~1 s).
+- Ao sair da tela (`onTrimMemory` UI_HIDDEN) o app solta as miniaturas da RAM (ficam no disco). Medido com vídeo
+  pausado no player nativo: **51–56 MB de PSS** (antes ~120 MB + até 32 MB de cache do streaming); retomada sem erro.
+- **Serviço em primeiro plano** (`StreamService`, tipo `mediaPlayback`) iniciado no toque do arquivo: sem ele o
+  Android 17 põe o processo em cache ~20 s depois que o player assume a tela e corta a rede
+  (`UnknownHostException`, medido). Fica ativo **enquanto algum player estiver com um stream aberto** (pausas
+  longas funcionam); para 15 s depois que o último stream é fechado, pelo botão "Parar" da notificação ou, por
+  segurança, após 2 h sem leituras. O VLC só fecha o arquivo quando o processo dele termina.
+  Exige `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` (concedidas na instalação, sem pedido) —
+  exceção aprovada à regra "só INTERNET".
+
+Medido no VLC (SM-S911B, Wi-Fi):
+
+| Caso | Resultado |
+|---|---|
+| Vídeo de 15 s (2,7 MB) | abre e toca em < 1 s (buffer de 1,75 s pronto em 859 ms), até o fim |
+| Vídeo de 4,5 GB / 48 min, índice MP4 de 6,7 MB | começa em ~3,5 s; 2 min tocando + 2 saltos sem erro; 8 requisições, 155 MB lidos |
+| Mesmo vídeo **sem** o serviço | erro de E/S ~25 s após o início (rede cortada) |
+| Pausa de 6 min e retomada (2 testes) | serviço ativo o tempo todo, processo em primeiro plano, sem erro ao retomar |
+| VLC fechado pelos recentes | o processo do VLC continua vivo segurando o arquivo; o serviço só para quando ele morre (15 s depois, medido) ou pelo teto de 2 h |
+
+Player nativo da Samsung (vídeo de 1 GB):
+
+| Versão | Resultado |
+|---|---|
+| v0.5.1 (sob demanda, 1 conexão) | áudio liso, imagem congela ~5 s a cada poucos quadros; 41 requisições em 47 s |
+| v0.5.2 (cache + 4 conexões) | melhor, ainda com travadas; 12 requisições, 67 MB baixados para 25 MB lidos |
+| v0.5.3 (download antecipado) | liso; 3 requisições, 20 esperas somando 3,2 s (início e saltos) |
+
+### Configurar o OAuth (uma vez)
+
+1. Em <https://console.cloud.google.com> crie um projeto e ative a **Google Drive API**.
+2. **Tela de consentimento OAuth**: tipo "Externo", status "Em teste", adicione sua conta em "Usuários de teste"
+   e o escopo `.../auth/drive` (leitura e edição desde a fase 7; escopo restrito: para publicar
+   é preciso verificação do Google).
+3. **Credenciais → Criar ID do cliente OAuth → Android**: pacote `app.index.files` e o SHA-1 da chave que assina o APK.
+   Chave de debug desta máquina (também assina o release enquanto não houver `signing/`):
+   `B5:19:2C:C8:90:87:4C:06:28:72:FE:D9:F3:1A:A7:C7:D4:67:60:58`
+   (`keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android`).
+4. Não há arquivo de configuração no app: o Google associa pacote + SHA-1 ao cliente. Pode levar alguns minutos para valer.
+
+## Bloqueio do app (fase 6)
+
+- Configurações → Segurança. Dois métodos: **bloqueio do celular** (PIN/padrão/senha/biometria
+  do aparelho via `BiometricPrompt` com `DEVICE_CREDENTIAL`; `KeyguardManager` em API 26–28) ou
+  **senha própria** (PIN 4–8 dígitos ou senha 4–64 caracteres) com biometria opcional.
+- Só o hash fica salvo: PBKDF2WithHmacSHA256, 120 mil iterações, salt aleatório de 16 bytes,
+  comparação em tempo constante (`MessageDigest.isEqual`), em SharedPreferences `lock`.
+- Após 5 erros, cada novo erro impõe **5 min** de espera (persistida; vale mesmo fechando o app).
+- Estado "desbloqueado" só na memória: processo novo começa bloqueado. Rebloqueio
+  imediatamente / 30 s / 1 min / 5 min após sair. Seletor de pastas, login Google e a tela de
+  senha do aparelho não contam como saída.
+- `FLAG_SECURE` ligado por padrão (apps recentes em branco, sem captura de tela).
+- Se o bloqueio de tela do celular for removido, o app exige criar uma senha própria.
+- "Esqueci a senha → Redefinir app" apaga configurações, índice, miniaturas, pastas e login do
+  Drive (nunca os arquivos) e reinicia.
+- Permissão nova: `USE_BIOMETRIC` (normal, concedida na instalação; não dá acesso a dados biométricos).
+
+## Edição de arquivos (fase 7)
+
+- Toque longo (ou ⋮ → Selecionar) entra no modo de seleção: Renomear, Copiar, Mover, Apagar,
+  Selecionar tudo. Copiar/Mover guardam os itens e mostram "Colar aqui" em qualquer pasta.
+  ⋮ → Nova pasta / Enviar arquivos para cá (seletor do sistema, vários arquivos).
+- Contrato único em `FileSource` (createFolder, rename, delete, moveWithin, copyWithin,
+  openRead, write); `FileOps` faz o resto igual para SAF e Drive, com cópia recursiva de pastas.
+- Mesma raiz local: `DocumentsContract.moveDocument` (sem copiar bytes); entre Drives: PATCH de
+  parents e `files.copy` no servidor. Entre origens: stream de 256 KB (upload retomável num PUT
+  só no Drive). Arquivo pela metade é apagado em falha ou cancelamento.
+- Apagar: local é definitivo (SAF não tem lixeira; o aviso diz isso); Drive vai para a lixeira.
+- Nomes repetidos viram "nome (1).ext". Pasta para dentro dela mesma é recusada.
+- Atalhos do Drive: renomear/mover/apagar é recusado (mexeria no original em outra pasta).
+- Depois de cada operação: listagens das pastas mexidas regravadas no cache, descendentes de
+  pastas apagadas/movidas removidos do índice, pastas novas indexadas (`Indexer.startSubtree`),
+  thumbs antigas apagadas.
+- Permissões: SAF de leitura **e escrita** (pastas antigas: readicionar uma vez, índice mantido);
+  Drive passa a usar o escopo `drive` (reconectar uma vez).
+- Segundo plano (v0.7.1): `TransferService` (serviço em primeiro plano tipo dataSync) ativo só
+  durante a operação; cópias e envios continuam com o app fora da tela ou a tela apagada.
+  Notificação sem nomes de arquivos (só "Item x de n" e botão Cancelar). Android 15+: limite de
+  6 h/dia do tipo dataSync (`onTimeout` cancela a operação). Sem `POST_NOTIFICATIONS`, no Android
+  13+ a notificação só aparece no gerenciador de tarefas. A janela de progresso é escondida
+  enquanto o app está bloqueado.
+
+## Pastas protegidas (fase 8)
+
+- Ocultas só dentro do Index: nada muda nos arquivos (sem `.nomedia`, sem renomear). Proteger
+  por seleção (⋮ → Proteger pasta) ou em Gerenciar pastas; acesso por ⋮ → Pastas protegidas.
+- Cofre `files/vault/vault.bin`: JSON cifrado com AES-256-GCM (IV de 12 bytes + texto cifrado).
+  A chave mestra fica no AndroidKeyStore (`index_vault`); dentro do cofre vai uma chave de dados
+  aleatória, as entradas (raiz, ids e nomes do caminho, método) e a senha da lista, se houver.
+- Abrir a lista: senha do app se o bloqueio estiver ativo, senão o bloqueio do celular, senão uma
+  senha própria das pastas protegidas. Cada pasta: senha do app, bloqueio do celular ou senha
+  própria (PBKDF2). Celular sem bloqueio → pasta passa a pedir
+  senha própria.
+- Ocultação: filtro no cache de listagem, no indexador (walk, raiz, subárvore), em `Roots.all`,
+  na listagem do navegador e no seletor do Drive; contagens refeitas sem ela. Readicionar a
+  pasta-raiz protegida é ignorado em silêncio.
+- Índice próprio por pasta (`files/vault/<id>/index.bin`, cifrado; só em memória enquanto aberta)
+  com busca dentro dela. Miniaturas cifradas em `files/vault/<id>/t/` (`VaultThumbs`).
+- Sessão só em memória: tranca ao fechar a lista ou após o tempo fora do app (0/1/5/15 min,
+  padrão 5). FLAG_SECURE sempre que alguma pasta protegida estiver aberta.
+- Renomear/mover pasta local que contém pasta protegida atualiza o id dela (`Vault.remap`);
+  copiar uma pasta que contém pasta protegida é recusado.
+- Apagar pela listagem comum uma pasta que contém uma protegida é recusado (v0.13.6), com o mesmo
+  erro genérico da cópia (`Vault.containsProtected`, pela origem e, no aparelho, pelo caminho).
+  Até a v0.13.5 a protegida era apagada junto.
+
+## Seleção aleatória (fase 9)
+
+- Botão de dado na navegação e na pesquisa: toque sorteia, toque longo abre o painel
+  (quantidade 5/10/20/50/100 ou 1–1000, tipo fotos/vídeos/ambos, subpastas na navegação). Os
+  valores ficam como padrão (`Prefs.random*`, também em Configurações → Seleção aleatória).
+- `RandomPick`: origem filtrada pelo tipo e sem ids repetidos; Fisher–Yates parcial com
+  `SecureRandom` (sem repetição; origem menor que N → todos, embaralhados).
+- Navegação: origem = itens visíveis da pasta (mesmos filtros da listagem); com subpastas,
+  mais `ListingCache.filesUnder` / `VaultIndex.filesUnder` (pula ocultos e pastas protegidas).
+- Pesquisa: origem = resultados com os filtros ativos; se cortados em 5.000, a consulta é refeita
+  sem o corte (`SearchQuery.limit`) só para o sorteio.
+- A seleção sorteada substitui a lista: barra "N aleatórios de M" com "Sortear de novo" e
+  "Lista completa" (ou voltar, que restaura a rolagem); ordenação e grade/lista valem para ela;
+  sobrevive à ida a outra tela. Sem edição enquanto ativa (itens podem vir de subpastas).
+
+## Pré-carga de miniaturas (fase 10)
+
+- Só sob pedido: ⋮ → Carregar todas as miniaturas (pasta, pesquisa ou seleção sorteada).
+  Substitui a antiga opção "pré-gerar miniaturas ao abrir a pasta".
+- `thumbs/Preload`: 3 tarefas em paralelo, do item visível para fora; gera/baixa no disco o que
+  falta (nunca os originais) e carrega na RAM (RGB_565, 256 px) até o orçamento.
+- Orçamento: 1/4 de `ActivityManager.memoryClass` (máx. 1/3 do heap; sem largeHeap). Durante a
+  sessão o LruCache comum só ganha esse teto (`resize`), então a RAM nunca passa dele; ao
+  liberar volta ao teto normal (32 MB) e o excedente sai. Se não coube tudo, ao parar a rolagem
+  carrega do disco a janela de ~3 telas acima e abaixo.
+- Progresso "1.240 / 5.000 (54 MB)" com Cancelar; raio na barra superior enquanto há RAM extra
+  (toque: situação, Parar/Liberar). Aviso antes de começar se o que falta não cabe no limite do
+  cache em disco (estimativa de 16 KB por miniatura).
+- Liberação da RAM (o disco fica): sair da lista sem voltar (1 min), app em segundo plano
+  (2 min), sem interação (5 min) — configuráveis em 1/2/5/10 min; `onTrimMemory` por falta de
+  memória libera na hora. Trancar pasta protegida também libera.
+- Drive "só via Wi-Fi" (padrão ligado): miniaturas do Drive puladas em dados móveis (contadas no
+  aviso final). Permissão nova: `ACCESS_NETWORK_STATE` (normal; só lê o tipo de conexão).
+
+## Temas (fase 11)
+
+- 20 temas só de cores (sem imagens): claros Papel, Areia, Céu, Menta, Lavanda, Pêssego, Nuvem,
+  Limão, Rosa Antigo, Ártico; escuros OLED Puro, Grafite, Meia-Noite, Floresta, Vinho, Âmbar,
+  Ametista, Oceano, Café, Neon. Cada um é um estilo `Theme.Index.<id>` que define os atributos
+  `idx*` (fundo, superfície, barra superior, barra de navegação, texto, texto secundário,
+  destaque, texto sobre destaque, seleção, aviso). `Theme.Index.Base` liga os atributos do
+  sistema a eles; `@color/bg`, `@color/text` etc. são seletores em `res/color/` que apontam para
+  `?attr/idx*`, então layouts e vetores existentes seguem o tema sem mudanças.
+- Contraste WCAG AA (≥ 4,5:1) conferido por script em todos os pares: texto/fundo, texto/
+  superfície, texto/barra, secundário/fundo e superfície, destaque/fundo e superfície,
+  texto sobre destaque, aviso/fundo e superfície. Pior caso: 4,56:1 (destaque do Areia).
+- Claro e escuro escolhidos à parte (Configurações → Aparência → Tema claro / Tema escuro), em
+  grade com prévia desenhada (`ThemeUi.Preview`: barra, grade com item selecionado, botão,
+  barra de navegação). Modo: seguir o sistema, sempre claro, sempre escuro ou por horário
+  (padrão escuro das 19:00 às 07:00; reavaliado ao abrir e na virada, com o app na tela).
+- Sem "piscar": o estilo é aplicado antes de `super.onCreate`; no Android 12+ o modo vai para
+  `UiModeManager.setApplicationNightMode` (o sistema já abre a janela no claro/escuro certo);
+  antes disso, `AppCompatDelegate`. A janela de abertura usa Papel/Grafite.
+- Edge-to-edge em todas as versões: a toolbar cresce sob a barra de status (cor da barra
+  superior) e o fundo atrás da barra de navegação/teclado usa a cor da barra de navegação.
+- "Preto real" virou o tema OLED Puro (quem usava começa nele).
+
+## Seleção por arraste (v0.11.1)
+
+- Navegador (grade e lista): toque longo num item e, sem soltar, arrastar desenha uma área
+  retangular; todos os itens que ela toca entram na seleção. Começando num item que ficou
+  desmarcado, a área desmarca. Ao encolher a área, os itens voltam ao estado anterior.
+- Perto da borda de cima/baixo (~72 dp) a lista rola sozinha, mais rápido quanto mais perto; a
+  área fica presa ao ponto inicial e acompanha a rolagem.
+- `ui/DragSelect` (ItemDecoration + OnItemTouchListener): células de tamanho único, então a área
+  vira um bloco linhas × colunas calculado por posição (itens fora da tela também entram); a cada
+  movimento só a união do bloco antigo com o novo é revisitada. Sem dependências novas.
+- Fora da seleção aleatória (sem edição) e da pesquisa (sem modo de seleção).
+
+## Tablet, teclado, mouse e pinça (fase 12)
+
+- **Colunas pela largura**: a preferência é o tamanho mínimo da miniatura (`Prefs.thumbDp`,
+  em Configurações → Tamanho mínimo das miniaturas); colunas = largura da lista ÷ tamanho.
+  `ui/GridZoom` recalcula a cada mudança de largura/altura da lista (girar, multi-janela,
+  painel lateral) mantendo o item do topo no lugar. Quem usava "N colunas" começa no
+  equivalente (3 colunas → 112 dp).
+- **Pinça** (também Ctrl + roda do mouse, Ctrl + `+`/`−` e ⋮ → Miniaturas maiores/menores):
+  degraus lista com detalhes → 64, 80, 96, 112, 128, 160, 200, 256, 320, 400, 560 dp →
+  uma por tela. Degraus que não mudam as colunas na largura atual são pulados; o item sob os
+  dedos fica parado. "Uma por tela": coluna única com altura limitada à tela e a imagem
+  inteira (`FIT_CENTER`).
+- **Miniaturas por largura da célula**: 256 px; 384 px acima de ~420 px de célula; 768 px
+  acima de ~700 px (coluna única). Chave com sufixo por tamanho; apagar/mover limpa todos.
+- **Dois painéis** com janela ≥ 840 dp (Tab S7+ nas duas orientações; S23 nunca): pastas
+  fixas à esquerda (`HomeFragment.newPane`, 26% da largura, 260–360 dp), conteúdo à direita;
+  escolher uma pasta à esquerda substitui o que está aberto. Sem layouts por qualificador:
+  a Activity trata giro/redimensionamento sem recriar, então o painel é ligado em código.
+- **Teclado**: setas navegam pelos itens (contorno de foco), Enter abre, Backspace/Esc
+  voltam, Ctrl+F pesquisa (na pasta atual), Ctrl+A seleciona tudo, Delete apaga a seleção,
+  F2 renomeia. **Mouse**: clique direito num item abre o menu de ações (Abrir, Renomear,
+  Copiar, Mover, Apagar, Proteger); roda com Ctrl muda o tamanho.
+
+- **Seleção no sorteio e na pesquisa** (v0.12.2): toque longo e arraste também no resultado do
+  sorteio e na pesquisa. Sem edição ali (itens de várias pastas): "Abrir com…", "Selecionar
+  tudo" e, na pesquisa, "Ir para a pasta". Na pesquisa o toque longo seleciona; as ações do
+  item ficam no clique direito do mouse.
+- **"Abrir com…"** (v0.12.3), com um arquivo selecionado: lista própria de apps (`ui/OpenWith`,
+  `queryIntentActivities`), que não lê o arquivo — a janela do sistema lia o streaming do Drive
+  inteiro antes de aparecer. O app escolhido recebe o mesmo Intent da abertura normal.
+  Configurações → Abrir com… → Players da lista limita a lista aos players marcados (vazio =
+  todos; se nenhum marcado abre o tipo, mostra todos). Manifesto: `<queries>` para VIEW de
+  vídeo/imagem/áudio/arquivos (visibilidade de pacotes do Android 11+; não é permissão).
+
+## Visualizador de fotos, compartilhar e listas de apps (v0.12.4)
+
+- **Visualizador interno** (`ui/viewer`): tocar numa foto (pasta, sorteio, pesquisa) abre em
+  tela cheia; vídeos seguem abrindo como antes. Configurações → Navegação → "Abrir fotos no
+  visualizador do Index" (ligado por padrão). Páginas num `RecyclerView` com `PagerSnapHelper`,
+  só fotos da lista, na ordem dela; barra (nome, "3 / 120", Compartilhar, Abrir com…) e setas
+  laterais somem com um toque, junto com as barras do sistema. Teclado: setas/PgUp/PgDn/
+  Home/End; Esc/Backspace fecha. Roda do mouse dá zoom. Ao fechar, a grade rola até a foto.
+- **Zoom mantido entre fotos**: o estado do `ZoomImageView` é normalizado (zoom 1 = foto
+  inteira; centro em fração da imagem), então vale para qualquer resolução e para a próxima
+  foto — ela abre com o mesmo zoom na mesma região. As vizinhas já recebem o estado.
+- **Leve** (`ViewerLoader`): miniatura da grade na hora (se estiver na RAM, `cachedAny`), depois
+  a base com lado ≈ tela em RGB_565 (Drive: miniatura `=sN` até 1,5× a tela, sem baixar o
+  original). Só 3 bases na memória (atual e vizinhas); tudo liberado ao fechar. Com zoom além
+  da base, arquivos locais ganham um **recorte nítido** só da área visível
+  (`BitmapRegionDecoder`, amostragem pela escala, rotação EXIF mapeada; espelhamentos sem
+  recorte). `FileSource.openFd` dá o descritor (local; Drive não tem).
+- **Compartilhar** (barra de seleção na pasta/sorteio/pesquisa, clique direito e visualizador):
+  um ou vários arquivos (pastas não). Lista própria de apps, aberta na hora; locais vão com a
+  Uri do SAF, do Drive com o mesmo link de streaming dos players (`FileSource.shareUri`;
+  quem recebe lê direto, sem download prévio; o serviço de streaming se encerra sozinho se
+  nada abrir). Manifesto: `<queries>` para SEND e SEND_MULTIPLE.
+- **Listas de apps** em Configurações: "Players de vídeo da lista" (vídeo e áudio),
+  "Visualizadores de imagem da lista" (fotos) e "Apps da lista de compartilhar". Vazio = todos;
+  se nenhum marcado serve, mostra todos; "Mostrar todos os apps" no fim. Outros tipos no
+  "Abrir com…" mostram todos os apps.
+- **Configurações em todas as telas**: último item do menu ⋮ (menos na própria tela).
+
+## Polimento (fase 13)
+
+- **Pasta protegida órfã**: apagar uma pasta que continha uma pasta protegida deixava a entrada
+  no cofre. Agora apagar (ou mover por cópia) tira do cofre as proteções dela e de dentro dela,
+  com o índice e as miniaturas cifradas (`Vault.forgetDeleted`, `Protection.onFolderDeleted`).
+  Entradas órfãs antigas saem com "Remover proteção" na lista.
+- **Acessibilidade**: todos os botões de imagem têm descrição; itens selecionados são
+  anunciados como "Selecionado" pelo TalkBack; fotos do visualizador são lidas pelo nome.
+  Estados vazios com texto e ação (pasta vazia, sem pastas, sem resultados, Drive vazio).
+
+- **Ícone (v0.13.2)**: "fichário com abas" na paleta "noite roxa" (fundo `#1B1830`, ficha
+  clara, abas âmbar/verde/rosa), escolhido entre 5 propostas e 3 variações escuras. Adaptativo e
+  100% vetorial, com camada monocromática para os ícones temáticos do Android 13+.
+- **Configurações reorganizadas (v0.13.2)**, do uso diário ao raro: Aparência · Navegação
+  (Exibição, Ordenação padrão, Arquivos e fotos) · Abrir e compartilhar (as 3 listas de apps) ·
+  Seleção aleatória · Google Drive · Miniaturas · Pré-carga · Segurança · Dados do app
+  ("Redefinir app" sozinho no fim, em cor de aviso) · Sobre (versão instalada). Seções separadas por linhas finas.
+- **Pastas bloqueadas (v0.13.3)**: o seletor do sistema recusa a Download inteira e as raízes
+  do armazenamento desde o Android 11. "Adicionar pasta local" agora abre um seletor próprio
+  (`LocalPickerFragment`: volumes → pastas, mesmo layout do seletor do Drive) e a pasta é lida pelo
+  caminho (`FsSource`, `java.io.File`; raiz com `source = file`). Ids são caminhos absolutos, então
+  cofre, índice, busca e cópia/movimentação funcionam igual. Outros apps recebem Uri do FileProvider
+  (`external-path`). Miniaturas: `ImageDecoder` pelo caminho; vídeo com `ThumbnailUtils`.
+  Permissão revogada: a pasta aparece indisponível e "Readicionar" pede de novo.
+  Testado no S23: Download com 394 itens, seletor, miniatura, visualizador e compartilhar.
+- **Pastas sempre em dia (v0.13.4)**:
+  - **Puxar para atualizar**: com a lista no topo, arrastar para baixo traz um círculo; soltando
+    além do limite a pasta é consultada de novo (`PullRefresh`, sem biblioteca: um
+    `OnItemTouchListener` que cede à pinça e ao arraste de seleção).
+  - **Volta ao app**: a pasta aberta é consultada de novo (onStart) e o índice incremental roda
+    outra vez se o app ficou mais de 10 s fora; só o que mudou é aplicado (DiffUtil).
+  - **Aviso de atualizando**: o mesmo círculo gira quando a consulta passa de 400 ms com a lista
+    do cache na tela (Câmera com 925 fotos: 1–4 s pelo SAF).
+  - **Índice e subpastas**: a data de uma subpasta vinha da listagem guardada da pasta de cima,
+    que não muda quando só a subpasta muda; arquivos novos em subpastas ficavam fora da busca e das
+    contagens. Agora, com a pasta de cima reaproveitada, a data atual da subpasta é lida
+    (`FileSource.folderMtime`: uma consulta de uma coluna no SAF; `lastModified` no caminho).
+  - Testado no S23 com uma pasta temporária: volta pelos recentes, puxada, subpasta no índice.
+- **Pasta inicial e Recentes (v0.13.5)**:
+  - **Pasta inicial**: Configurações › Navegação › "Ao abrir o app" escolhe o que abre com o app
+    (lista de pastas, Recentes ou uma pasta raiz). Subpastas pelo ⋮ da pasta ("Definir como pasta
+    inicial"). Pasta removida, indisponível ou protegida: abre a lista; subpasta apagada: abre a raiz
+    e ela passa a ser a inicial.
+  - **Recentes**: pasta virtual (`RecentSource`, raiz -10 fora do banco) no topo da lista, com os
+    arquivos adicionados ou modificados nos últimos 30 dias em todo o aparelho (MediaStore, até 500,
+    mais novos primeiro). Fora: pastas protegidas, ocultas e Android/data e obb. Abrir, compartilhar,
+    renomear, mover e apagar funcionam; criar pasta, enviar, colar e buscar ficam ocultos. Precisa do
+    acesso a todos os arquivos (API 30+); chave "Mostrar a pasta Recentes" para esconder.
+  - Testado no Tab S7+: Recentes, pasta inicial em Recentes, raiz, subpasta e subpasta apagada.
+- **Segurança de dados (v0.13.6)**: chave de assinatura copiada para `signing/` (ver "Compilar") e
+  apagar uma pasta com protegida dentro passou a ser recusado. Testado no S23: apagar arquivo em
+  pasta adicionada pelo caminho (Download); apagar pasta com protegida dentro (recusado, nada
+  apagado); a mesma pasta sem a proteção (apagada); arquivo de pasta protegida fora de Recentes
+  (presente na MediaStore com data de hoje, ausente da lista).
+- **Filtros na Recentes (v0.13.7)**: botão de funil (só em Recentes) com tipo — todos, fotos,
+  vídeos, áudio, documentos (tipo do Android + PDF, texto e Office pelo mime) ou APKs — e período
+  (7, 30 ou 90 dias). Feito na consulta à MediaStore (`MEDIA_TYPE`/`MIME_TYPE`), salvo nas
+  preferências; a linha da lista de pastas mostra o filtro ("Fotos · últimos 7 dias"). Testado no
+  Tab S7+: APKs (5 na lista = 5 na MediaStore), fotos em 7 dias (só imagens), documentos (só PDF e
+  HTML) e a descrição no painel lateral. v0.13.8: linha divisória entre os dois grupos do menu
+  (`MenuCompat.setGroupDividerEnabled`).
+
+### Relatório de desempenho (S23, Android 17, v0.13)
+
+| Medida | Resultado |
+|---|---|
+| Abertura a frio (`am start -S -W`, 6×, logo após instalar) | 128–275 ms; mediana ~166 ms. As 2 primeiras incluem a compilação pós-instalação; estável ~130–160 ms |
+| Memória na tela inicial (PSS) | 77 MB no total: Java 8,5 MB, nativa 12 MB, gráficos 45 MB (texturas da GPU) |
+| Rolagem (pasta Camera, ~900 fotos, modo lista; 30 arrastes rápidos, `gfxinfo`) | 3.817 quadros, 0,34% atrasados (13); mediana 7 ms, p90/p95 13 ms, p99 14 ms; nenhum upload lento de bitmap, 1 quadro lento na thread de UI |
+| Memória (v0.13 → v0.13.1), mesmo roteiro: abrir Camera, 30 arrastes | ver tabela abaixo |
+
+**Pico de memória reduzido (v0.13.1).** Miniaturas que saíam do cache (teto de 32 MB) seguiam
+vivas até o GC rodar, com a cópia delas na GPU: o heap nativo chegava a 77 MB e o `Gfx dev` a
+77 MB. Agora cada uma é liberada (`recycle`) ao sair do cache — na hora, se não está em
+nenhuma célula, ou quando a última célula que a mostra troca de imagem (contagem por view,
+com referências fracas). Isso também solta a textura no driver.
+
+| Momento (PSS, KB) | v0.13 total | v0.13 nativa | v0.13 Gfx dev | v0.13.1 total | v0.13.1 nativa | v0.13.1 Gfx dev |
+|---|---|---|---|---|---|---|
+| Camera aberta | 86.485 | 14.648 | 2.420 | 88.915 | 15.588 | 2.304 |
+| Logo após rolar | 324.945 | 77.148 | 77.012 | **227.477** | **48.716** | **43.916** |
+| Parado 15 s | 278.126 | 49.756 | 77.012 | **207.390** | 49.088 | **43.916** |
+| Segundo plano 8 s | 193.252 | 49.812 | 57.164 | **125.748** | **15.692** | **40.480** |
+
+O resto dos gráficos é do sistema: ~40 MB de buffers da tela (`EGL mtrack`, fixo) e o cache de
+texturas do HWUI/driver (`GL mtrack` ~54 MB), que o Android solta sozinho quando precisa.
+Rolagem igual depois da mudança (3.863 quadros, 0,49% atrasados, p99 14 ms).
+| Teto da memória de miniaturas | 32 MB (1/8 do heap, com teto) |
+| Visualizador | 3 fotos base (≈ 5 MB cada em RGB_565 na tela do S23) + 1 recorte |
+
+### Relatório de tamanho do APK (v0.13: 962.857 bytes, 940 KB)
+
+| Parte | No APK | Descompactado |
+|---|---|---|
+| Código (`classes.dex`, R8) | 626 KB | 1,26 MB — ~142 KB são do Play Services Auth |
+| Recursos (`res/`, 347 arquivos, todos vetoriais/XML) | 149 KB | 264 KB |
+| `resources.arsc` (só português) | 142 KB | 142 KB |
+| Outros + assinatura | 5 KB | 14 KB |
+
+De 529 KB (fase 0) a 940 KB em 13 fases: Drive (+142 KB de Play Services), bloqueio e
+cofre, edição, temas e visualizador. Sem bibliotecas nativas (`lib/` vazio).
+
+## Leitor de documentos (v0.14.0)
+
+Abre dentro do app, só para ler: PDF, `.docx`/`.doc`, `.xlsx`/`.xls`, `.pptx`/`.ppt`,
+`.odt`/`.ods`/`.odp`, `.rtf`, `.txt` e afins (json, xml, log, código), `.md`, `.csv`/`.tsv` e
+`.html`. Chave em Configurações → Navegação → Arquivos ("Abrir documentos no leitor do Index"); desligada,
+volta a abrir no app externo. Barra com Compartilhar e Abrir com.
+
+- **Sem dependências novas.** PDF pelo `PdfRenderer` do Android numa RecyclerView própria
+  (`PdfView`): páginas renderizadas sob demanda numa thread só, cache LRU de bitmaps (≤ 1/5 do
+  heap), pinça, toque duplo (2,5×) e arraste, re-render nítido ao parar o zoom. Os demais
+  formatos são convertidos em HTML simples e mostrados num WebView com JavaScript, rede, arquivos
+  e navegação desligados (`loadDataWithBaseURL("about:blank")`, todo texto escapado).
+- **Office e LibreOffice novos** são ZIP de XML: lidos na memória (`ZipInputStream`, sem cópia em
+  disco — importa para as pastas protegidas) com `XmlPullParser`. Word: títulos, negrito/itálico/
+  sublinhado, listas e tabelas. Excel/Calc: todas as abas, strings compartilhadas, datas pelo
+  formato da célula, números com vírgula. PowerPoint/Impress: slides na ordem, título em destaque.
+- **Office 97–2003** (`.doc`, `.xls`, `.ppt`): leitor próprio do contêiner OLE2 e dos formatos
+  binários — tabela de peças do Word (texto e tabelas), registros BIFF8 do Excel (SST, números,
+  RK, fórmulas com resultado, datas) e átomos de texto do PowerPoint por slide.
+- **Limites** para ficar rápido e não estourar memória: texto até 4 MB, binários até 64 MB, 5.000
+  linhas e 200 colunas por planilha, HTML final até 6 milhões de caracteres (aviso de "cortado").
+  Arquivo com senha mostra a mensagem certa, sem travar.
+- Testado no Tab S7+ com 16 arquivos gerados no Word, Excel e PowerPoint (e escritos à mão): todos
+  abrem; tabelas do `.doc` e do `.rtf` como tabela, datas e decimais certos, página HTML com fundo
+  branco, PDF com contador de páginas.
+- **Correção (mesmo dia):** páginas de PDF ficavam em branco. A lista pré-carrega a próxima página
+  e guarda as que saem da tela; quando voltam, não passam de novo pelo `onBindViewHolder`, e a
+  imagem pronta só ia para as páginas já na tela. Agora os holders ligados ficam num conjunto e
+  `onViewAttachedToWindow` confere a imagem. Testado com um PDF de 20 páginas (tablet) e no S23.
+- **Word com formatação (v0.14.1).** `Docx` lê `styles.xml` (estilos com herança `basedOn` e os
+  padrões do documento), `numbering.xml` (listas numeradas 1./a./i., marcadores, recuo por nível,
+  início redefinido) e as imagens de `word/media/` (PNG, JPEG, GIF, BMP, WebP embutidos como
+  `data:`; até 4 MB cada e 10 MB no total; EMF/WMF viram "[imagem]"). Aplica tamanho, cor, realce,
+  família (serifa/sem serifa/monoespaçada), negrito, itálico, sublinhado, tachado, sobrescrito,
+  maiúsculas e texto oculto; alinhamento, recuos, espaçamento antes/depois, entrelinha e
+  sombreamento; tabelas com células mescladas na horizontal e sombreadas; caixas de texto. Ignora
+  revisões apagadas e formatação antiga de revisão. O texto normal do documento vira 16 px e o
+  resto é proporcional. Mostrado como folha branca com as cores do documento (não segue o tema
+  escuro). Cores e fontes são validadas antes de entrar no CSS. `.doc` (97–2003) segue só texto.
+  Testado no Tab S7+ com documento gerado no Word (título, títulos coloridos, cores, tamanhos,
+  alinhamentos, recuo, listas, tabela sombreada e imagem).
+- **v0.14.2.** `DocActivity`: o Index aparece no "Abrir com" de outros apps para os formatos do
+  leitor (PDF, Office, LibreOffice, RTF, texto, Markdown, CSV, HTML); tela só do documento, sem o
+  resto do app; voltar retorna a quem chamou. `UriSource` lê o arquivo recebido (só leitura).
+  `DocFmt`: `.doc` 97–2003 com formatação (folha de estilos STSH, FKPs de CHPX/PAPX, listas
+  PlfLst/PlfLfo, tabelas por marca de célula/linha); sem sombreamento de tabela e sem imagens
+  ("[imagem]"); se algo falhar, cai no modo só texto. Testado no Tab S7+ (abertura externa de
+  .docx e .doc; .doc convertido pelo Word e o de teste antigo).
+
+## Dependências
+
+| Dependência | Motivo |
+|---|---|
+| `androidx.appcompat:appcompat` 1.7.1 | Tema DayNight e `AppCompatDelegate.setDefaultNightMode` em API 26+. Traz `fragment`, `activity` e `core` transitivamente (Activity única com Fragments, seletor SAF via Activity Result). |
+| `androidx.recyclerview:recyclerview` 1.4.0 | Grade/lista com reciclagem de views e `DiffUtil` (exigidos pela especificação). |
+| `com.google.android.gms:play-services-auth` 22.0.0 | OAuth do Drive (`AuthorizationClient`). Única dependência pesada permitida; +142 KB no APK após R8. |
+
+Nenhuma outra. Kotlin vem embutido no AGP 9.
+
+## Histórico do APK release
+
+| Versão | Tamanho | Abertura a frio (SM-S911B, Android 17) |
+|---|---|---|
+| v0.1-fase0 | 541.896 bytes (529 KB) | 110–151 ms, mediana ~123 ms (8× `am start -S -W`) |
+| v0.2-fase1 | 656.600 bytes (641 KB) | — |
+| v0.3-fase2 | 666.568 bytes (651 KB) | — |
+| v0.4-fase3 | 679.685 bytes (664 KB) | — |
+| v0.5-fase5 | 821.766 bytes (803 KB) | 113–138 ms (5× após force-stop) |
+| v0.5.1-fase5 (streaming) | 826.166 bytes (807 KB) | — |
+| v0.5.3-fase5 (download antecipado no streaming) | 828.030 bytes (809 KB) | — |
+| v0.5.4-fase5 (libera memória na pausa e em segundo plano) | 828.066 bytes (809 KB) | — |
+| v0.6-fase6 (bloqueio do app) | 847.734 bytes (828 KB) | — |
+| v0.7-fase7 (edição de arquivos) | 869.310 bytes (849 KB) | — |
+| v0.7.1-fase7 (transferências em segundo plano) | 870.878 bytes (850 KB) | — |
+| v0.8-fase8 (pastas protegidas) | 892.814 bytes (872 KB) | — |
+| v0.9-fase9 (seleção aleatória) | 903.415 bytes (882 KB) | — |
+| v0.10-fase10 (pré-carga de miniaturas) | 914.063 bytes (893 KB) | — |
+| v0.10.1-fase10 (MB na RAM no contador) | 914.271 bytes (893 KB) | — |
+| v0.10.2-fase10 (aceleração da rolagem mais suave) | 914.259 bytes (893 KB) | — |
+| v0.11-fase11 (temas) | 928.240 bytes (906 KB) | — |
+| v0.11.1-fase11 (seleção por arraste) | 930.132 bytes (908 KB) | — |
+| v0.12-fase12 (tablet, teclado e mouse) | 934.264 bytes (912 KB) | — |
+| v0.12.1-fase12 (pinça: da lista a uma por tela) | 934.956 bytes (913 KB) | — |
+| v0.12.2-fase12 (seleção no sorteio/pesquisa, Abrir com) | 937.521 bytes (916 KB) | — |
+| v0.12.3-fase12 (lista própria do Abrir com, players) | 940.557 bytes (918 KB) | — |
+| v0.12.4-fase12 (visualizador de fotos, compartilhar, listas de apps) | 962.017 bytes (939 KB) | — |
+| v0.13-fase13 (polimento, relatórios) | 962.857 bytes (940 KB) | 128–275 ms, mediana ~166 ms (6×, logo após instalar) |
+| v0.13.1-fase13 (miniaturas liberadas ao sair do cache) | 963.089 bytes (941 KB) | — |
+| v0.13.2-fase13 (ícone novo, configurações reorganizadas, seção Sobre) | 965.205 bytes (943 KB) | — |
+| v0.13.3-fase13 (pastas bloqueadas: Download, raízes) | 969.853 bytes (947 KB) | — |
+| v0.13.4-fase13 (puxar para atualizar, pastas em dia) | 972.373 bytes (950 KB) | — |
+| v0.13.5-fase13 (pasta inicial, Recentes) | 978.325 bytes (955 KB) | — |
+| v0.13.6-fase13 (chave no projeto, apagar recusa pasta com protegida) | 978.665 bytes (956 KB) | — |
+| v0.13.7-fase13 (filtros na Recentes) | 981.493 bytes (958 KB) | — |
+| v0.13.8-fase13 (divisória no filtro da Recentes) | 981.837 bytes (959 KB) | — |
+| v0.14.0-fase13 (leitor de documentos) | 1.021.089 bytes (997 KB) | — |
+| v0.14.1-fase13 (Word com formatação) | 1.031.941 bytes (1.008 KB) | — |
+| v0.14.2-fase13 (abrir de outros apps, .doc formatado) | 1.042.265 bytes (1.018 KB) | — |
+| v0.14.3-fase13 (sem nome do autor no Sobre) | 1.042.165 bytes (1.018 KB) | — |

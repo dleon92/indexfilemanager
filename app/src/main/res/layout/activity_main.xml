@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Edge-to-edge (targetSdk 35+): MainActivity aplica os insets à mão. A toolbar
+     cresce por baixo da barra de status (cor idxToolbar) e o fundo de main_ui
+     aparece atrás da barra de navegação (cor idxNavBar). A tela de bloqueio
+     (ViewStub) é inflada só quando o bloqueio está ativo e fica por cima de tudo. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/main_ui"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/idxNavBar"
+        android:orientation="vertical">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/idxToolbar" />
+
+        <!-- Tela larga (≥ 840 dp): pastas à esquerda (nav_pane), conteúdo à direita. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:id="@+id/nav_pane"
+                android:layout_width="300dp"
+                android:layout_height="match_parent"
+                android:background="?attr/idxBg"
+                android:visibility="gone" />
+
+            <View
+                android:id="@+id/nav_divider"
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/divider"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:id="@+id/content"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/idxBg" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Visualizador de fotos (tela cheia, por cima do conteúdo e por baixo do bloqueio). -->
+    <FrameLayout
+        android:id="@+id/viewer_host"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ViewStub
+        android:id="@+id/lock_stub"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout="@layout/lock_screen" />
+</FrameLayout>

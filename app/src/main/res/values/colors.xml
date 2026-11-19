@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- bg, surface, text, text_secondary, accent, on_accent, selection e warning
+         ficam em res/color/ e seguem o tema escolhido (fase 11). -->
+    <color name="divider">#1F000000</color>
+
+    <!-- Ícones genéricos por tipo. -->
+    <color name="icon_folder">#F2A900</color>
+    <color name="icon_image">#2E9D57</color>
+    <color name="icon_video">#D93025</color>
+    <color name="icon_audio">#8E44AD</color>
+    <color name="icon_file">#78858F</color>
+</resources>

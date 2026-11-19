@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Index</string>
+    <string name="settings">Configurações</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancelar</string>
+    <string name="more_options">Mais opções</string>
+
+    <!-- Pastas permitidas -->
+    <string name="home_empty">Nenhuma pasta adicionada.\nO app só mostra as pastas que você liberar.</string>
+    <string name="add_folder">Adicionar pasta</string>
+    <string name="manage_folders">Gerenciar pastas</string>
+    <string name="manage_empty">Nenhuma pasta liberada ainda.</string>
+    <string name="add_local_folder">Adicionar pasta local</string>
+    <string name="source_local">Local</string>
+    <string name="unavailable_tap">Indisponível · toque para readicionar</string>
+    <string name="unavailable_title">Pasta indisponível</string>
+    <string name="folder_unavailable">Não foi possível abrir esta pasta. A permissão pode ter sido revogada ou a pasta foi movida ou apagada.</string>
+    <string name="readd">Readicionar</string>
+    <string name="rename">Renomear apelido</string>
+    <string name="remove">Remover</string>
+    <string name="remove_confirm">Remover \"%1$s\" do app? Os arquivos não serão apagados; o app só deixa de ter acesso.</string>
+    <string name="folder_already_added">Essa pasta já foi adicionada.</string>
+    <string name="folder_add_failed">Não foi possível adicionar a pasta.</string>
+
+    <!-- Navegação -->
+    <string name="folder">Pasta</string>
+    <string name="folder_empty">Pasta vazia.</string>
+    <string name="no_app_to_open">Nenhum app instalado abre este tipo de arquivo.</string>
+    <string name="view_grid">Grade</string>
+    <string name="view_list">Lista</string>
+    <string name="columns">Tamanho mínimo das miniaturas</string>
+    <string name="pane_hint">Escolha uma pasta no painel à esquerda.</string>
+    <string name="thumbs_bigger">Miniaturas maiores</string>
+    <string name="thumbs_smaller">Miniaturas menores</string>
+    <string name="thumb_size_value">%1$d dp</string>
+    <string name="thumb_size_fill">Uma por tela</string>
+    <string name="sort">Ordenar</string>
+    <string name="sort_name">Nome</string>
+    <string name="sort_size">Tamanho</string>
+    <string name="sort_type">Tipo</string>
+    <string name="sort_date">Data de modificação</string>
+    <string name="sort_desc">Ordem decrescente</string>
+    <string name="folders_first">Pastas primeiro</string>
+    <string name="sort_use_default">Usar padrão global</string>
+
+    <!-- Índice e pesquisa -->
+    <string name="search">Pesquisar</string>
+    <string name="search_hint">Nome do arquivo ou pasta</string>
+    <string name="scope_folder">Em \"%1$s\"</string>
+    <string name="scope_all">Todas as pastas</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_photos">Fotos</string>
+    <string name="filter_videos">Vídeos</string>
+    <string name="search_type_something">Digite para pesquisar.</string>
+    <plurals name="search_results">
+        <item quantity="one">%1$d resultado · %2$d ms</item>
+        <item quantity="other">%1$d resultados · %2$d ms</item>
+    </plurals>
+    <string name="search_none">Nenhum resultado · %1$d ms</string>
+    <string name="search_truncated">mostrando os primeiros %1$d</string>
+    <string name="search_failed">Não foi possível pesquisar.</string>
+    <string name="indexing">indexando…</string>
+    <string name="open">Abrir</string>
+    <string name="go_to_folder">Ir para a pasta</string>
+    <string name="open_with">Abrir com…</string>
+    <string name="open_with_all">Mostrar todos os apps</string>
+    <string name="players_title">Players de vídeo da lista</string>
+    <string name="players_all">Todos os apps que abrem o arquivo</string>
+    <string name="players_none">Nenhum player de vídeo instalado.</string>
+    <string name="players_reset">Todos</string>
+    <string name="share">Compartilhar</string>
+    <string name="share_apps_title">Apps da lista de compartilhar</string>
+    <string name="share_apps_none">Nenhum app para compartilhar instalado.</string>
+    <string name="no_app_to_share">Nenhum app pode receber este arquivo.</string>
+    <string name="share_failed">Não foi possível preparar o arquivo para compartilhar.</string>
+    <string name="image_viewers_title">Visualizadores de imagem da lista</string>
+    <string name="image_viewers_none">Nenhum visualizador de imagem instalado.</string>
+    <plurals name="players_count">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+    <string name="folder_not_indexed">Pasta ainda não indexada.</string>
+    <string name="reindex">Reindexar</string>
+    <string name="reindexing">Reindexando em segundo plano…</string>
+    <plurals name="item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d itens</item>
+    </plurals>
+
+    <!-- Configurações -->
+    <string name="section_appearance">Aparência</string>
+    <string name="section_open_share">Abrir e compartilhar</string>
+    <string name="section_preload">Pré-carga de miniaturas</string>
+    <string name="section_data">Dados do app</string>
+    <string name="section_about">Sobre</string>
+    <string name="about_version">Index %1$s</string>
+    <string name="sub_display">Exibição</string>
+    <string name="sub_sort">Ordenação padrão</string>
+    <string name="sub_files">Arquivos e fotos</string>
+    <string name="sub_storage">Cache no aparelho</string>
+    <string name="sub_lock">Bloqueio</string>
+    <string name="sub_theme_choice">Temas</string>
+    <string name="theme">Claro ou escuro</string>
+    <string name="theme_light">Sempre claro</string>
+    <string name="theme_dark">Sempre escuro</string>
+    <string name="theme_system">Seguir o sistema</string>
+    <string name="theme_schedule">Por horário</string>
+    <string name="schedule_start">Escuro a partir de</string>
+    <string name="schedule_end">Claro a partir de</string>
+    <string name="light_theme">Tema claro</string>
+    <string name="dark_theme">Tema escuro</string>
+    <string name="section_browsing">Navegação</string>
+    <string name="default_view">Modo de visualização padrão</string>
+    <string name="default_sort">Ordenação padrão</string>
+    <string name="show_hidden">Mostrar arquivos ocultos</string>
+    <string name="internal_viewer">Abrir fotos no visualizador do Index</string>
+    <string name="internal_docs">Abrir documentos no leitor do Index (PDF, Office, LibreOffice, textos)</string>
+
+    <!-- Leitor de documentos -->
+    <string name="doc_page">Página %1$d de %2$d</string>
+    <string name="doc_pages">PDF · %1$d páginas</string>
+    <string name="doc_empty">Documento vazio.</string>
+    <string name="doc_password">Documento protegido por senha. Use “Abrir com…” para abrir em outro app.</string>
+    <string name="doc_too_big">Documento grande demais para o leitor. Use “Abrir com…”.</string>
+    <string name="doc_failed">Não foi possível ler este documento. Ele pode estar corrompido ou num formato que o leitor não conhece. Use “Abrir com…”.</string>
+    <string name="viewer_counter">%1$d / %2$d</string>
+    <string name="back">Voltar</string>
+    <string name="a11y_selected">Selecionado</string>
+    <string name="viewer_prev">Foto anterior</string>
+    <string name="viewer_next">Próxima foto</string>
+    <string name="viewer_failed">Não foi possível mostrar esta foto</string>
+    <string name="sort_default_hint">A ordenação padrão vale para pastas sem ordenação própria. Ao mudar a ordenação dentro de uma pasta, ela fica salva só para aquela pasta.</string>
+    <string name="section_thumbs">Miniaturas</string>
+    <string name="thumb_cache_size">Tamanho atual do cache</string>
+    <string name="calculating">Calculando…</string>
+    <string name="thumb_cache_limit">Limite do cache</string>
+    <string name="unlimited">Ilimitado</string>
+    <string name="thumb_location">Guardar miniaturas em</string>
+    <string name="thumb_loc_cache">Cache (o sistema pode limpar se faltar espaço)</string>
+    <string name="thumb_loc_files">Armazenamento do app (permanente)</string>
+    <string name="thumb_clear">Limpar cache de miniaturas</string>
+    <string name="thumb_clear_hint">Elas serão geradas de novo conforme você navegar.</string>
+    <string name="thumb_clear_confirm">Apagar todas as miniaturas salvas? Seus arquivos não são afetados.</string>
+    <string name="clear">Limpar</string>
+    <string name="clear_folder_thumbs">Limpar miniaturas</string>
+    <string name="folder_thumbs_cleared">Miniaturas da pasta apagadas.</string>
+
+    <!-- Google Drive -->
+    <string name="add_drive_folder">Adicionar pasta do Google Drive</string>
+    <string name="add_folder_from">Adicionar pasta de</string>
+    <string name="refreshing">Atualizando a pasta</string>
+    <string name="all_files_title">Acesso às pastas do aparelho</string>
+    <string name="all_files_msg">O seletor de pastas do Android não deixa escolher algumas pastas, como a Download inteira ou a raiz do armazenamento. Para adicionar qualquer pasta, o Index precisa da permissão \"Acesso a todos os arquivos\".\n\nNa próxima tela, ative a opção para o Index e volte. O Index só mostra as pastas que você adicionar.</string>
+    <string name="all_files_open">Abrir permissão</string>
+    <string name="all_files_denied">Sem a permissão, use o seletor do sistema (algumas pastas ficam bloqueadas).</string>
+    <string name="local_pick_title">Escolher pasta</string>
+    <string name="local_pick_hint">Escolha um armazenamento</string>
+    <string name="source_local_device">Este aparelho</string>
+    <string name="source_drive">Google Drive</string>
+    <string name="drive_disconnected_tap">Conta Google desconectada · toque para conectar</string>
+    <string name="drive_connect">Conectar conta Google</string>
+    <string name="drive_connect_msg">Conecte sua conta Google para acessar as pastas do Drive. O app pede acesso de leitura e escrita (para renomear, mover, copiar, apagar e enviar arquivos).</string>
+    <string name="drive_connected_as">Conectado como %1$s</string>
+    <string name="drive_connect_failed">Não foi possível conectar ao Google. Verifique a conexão e tente de novo.</string>
+    <string name="drive_connect_cancelled">Conexão com o Google cancelada.</string>
+    <string name="drive_pick_title">Pasta do Google Drive</string>
+    <string name="drive_my_drive">Meu Drive</string>
+    <string name="drive_shared">Compartilhados comigo</string>
+    <string name="drive_use_folder">Adicionar esta pasta</string>
+    <string name="drive_pick_hint">Entre na pasta que deseja liberar e toque em \"Adicionar esta pasta\".</string>
+    <string name="drive_no_subfolders">Nenhuma subpasta.</string>
+    <string name="drive_offline">Sem conexão com o Google Drive.</string>
+    <string name="drive_offline_cached">Sem conexão: mostrando a última cópia salva.</string>
+    <string name="drive_auth_needed">Conecte a conta Google para ver esta pasta.</string>
+    <string name="retry">Tentar de novo</string>
+    <string name="drive_downloading">Baixando \"%1$s\"…</string>
+    <string name="drive_open_failed">Não foi possível abrir o arquivo do Drive.</string>
+    <string name="section_drive">Google Drive</string>
+    <string name="drive_account">Conta Google</string>
+    <string name="drive_not_connected">Não conectada · toque para conectar</string>
+    <string name="drive_disconnect">Desconectar</string>
+    <string name="drive_disconnect_confirm">Desconectar %1$s? As pastas do Drive continuam na lista, mas o índice delas é apagado até você conectar de novo.</string>
+    <string name="drive_open_mode">Abrir arquivos do Drive</string>
+    <string name="stream_channel">Streaming do Google Drive</string>
+    <string name="stream_notif_title">Transmitindo do Google Drive</string>
+    <string name="stream_notif_text">Mantém a conexão enquanto o player lê o arquivo.</string>
+    <string name="stream_stop">Parar</string>
+    <string name="transfer_channel">Operações com arquivos</string>
+    <string name="transfer_done">Operação concluída</string>
+    <string name="transfer_failed">Operação concluída com falhas</string>
+    <string name="transfer_cancelled">Operação cancelada</string>
+    <string name="drive_open_stream">Transmitir para um app do aparelho (sem baixar)</string>
+    <string name="drive_open_download">Baixar e abrir em um app do aparelho</string>
+    <string name="drive_open_link">Abrir no Google Drive</string>
+
+    <!-- Fase 6: bloqueio do app -->
+    <string name="confirm">Confirmar</string>
+    <string name="save">Salvar</string>
+    <string name="section_security">Segurança</string>
+    <string name="lock_enable">Bloquear o app</string>
+    <string name="lock_method">Método de desbloqueio</string>
+    <string name="lock_method_device">Bloqueio do celular</string>
+    <string name="lock_method_pin">PIN próprio do Index</string>
+    <string name="lock_method_password">Senha própria do Index</string>
+    <string name="lock_change">Alterar senha</string>
+    <string name="lock_change_pin_hint">Pede o PIN atual</string>
+    <string name="lock_change_password_hint">Pede a senha atual</string>
+    <string name="lock_biometric_switch">Desbloquear também com biometria</string>
+    <string name="lock_relock">Bloquear de novo após sair do app</string>
+    <string-array name="lock_relock_options">
+        <item>Imediatamente</item>
+        <item>30 segundos</item>
+        <item>1 minuto</item>
+        <item>5 minutos</item>
+    </string-array>
+    <string name="lock_secure">Ocultar nos apps recentes e bloquear capturas de tela</string>
+    <string name="lock_enabled_toast">Bloqueio ativado</string>
+    <string name="lock_disabled">Bloqueio desativado</string>
+    <string name="lock_changed">Senha alterada</string>
+    <string name="lock_save_failed">Não foi possível salvar a senha.</string>
+
+    <string name="lock_choose_title">Como desbloquear o Index?</string>
+    <string name="lock_choose_device">Bloqueio do celular (PIN, padrão, senha ou biometria do aparelho)</string>
+    <string name="lock_choose_device_off">Bloqueio do celular (indisponível: o celular não tem bloqueio de tela)</string>
+    <string name="lock_choose_own">Senha própria do Index (PIN ou senha)</string>
+    <string name="lock_choose_device_title">Usar o bloqueio do celular</string>
+    <string name="lock_device_warning">Qualquer pessoa que saiba desbloquear este celular também poderá abrir o Index. Para uma proteção só do Index, use uma senha própria.</string>
+    <string name="lock_device_use">Usar bloqueio do celular</string>
+    <string name="lock_device_none_title">Celular sem bloqueio de tela</string>
+    <string name="lock_device_none_msg">Configure um PIN, padrão ou senha nas configurações do Android para usar esta opção, ou escolha uma senha própria do Index.</string>
+    <string name="lock_device_removed">O bloqueio de tela do celular foi removido. Para o Index continuar protegido, crie uma senha própria.</string>
+
+    <string name="lock_create_title">Criar senha</string>
+    <string name="lock_kind_pin">PIN (4 a 8 dígitos)</string>
+    <string name="lock_kind_password">Senha</string>
+    <string name="lock_new_pin">Novo PIN</string>
+    <string name="lock_confirm_pin">Confirme o PIN</string>
+    <string name="lock_new_password">Nova senha</string>
+    <string name="lock_confirm_password">Confirme a senha</string>
+    <string name="lock_pin_rule">O PIN deve ter de %1$d a %2$d dígitos.</string>
+    <string name="lock_password_rule">A senha deve ter pelo menos %1$d caracteres.</string>
+    <string name="lock_mismatch">As duas digitações não são iguais.</string>
+    <string name="lock_biometric_title">Usar biometria?</string>
+    <string name="lock_biometric_ask">Desbloquear o Index também com a digital ou o rosto cadastrados no celular. A senha continua funcionando sempre.</string>
+    <string name="lock_biometric_yes">Usar biometria</string>
+    <string name="lock_biometric_no">Só a senha</string>
+    <string name="lock_current_pin">Digite o PIN atual</string>
+    <string name="lock_current_password">Digite a senha atual</string>
+
+    <string name="lock_title">Index bloqueado</string>
+    <string name="lock_msg_device">Desbloqueie com o bloqueio do celular.</string>
+    <string name="lock_msg_pin">Digite o PIN para abrir.</string>
+    <string name="lock_msg_password">Digite a senha para abrir.</string>
+    <string name="lock_hint_pin">PIN</string>
+    <string name="lock_hint_password">Senha</string>
+    <string name="lock_unlock">Desbloquear</string>
+    <string name="lock_use_biometric">Usar biometria</string>
+    <string name="lock_use_password">Usar senha</string>
+    <string name="lock_prompt_title">Desbloquear o Index</string>
+    <string name="lock_wrong">Senha incorreta.</string>
+    <string name="lock_wait">Muitas tentativas erradas. Tente de novo em %1$s.</string>
+    <string name="lock_forgot">Esqueci a senha</string>
+
+    <string name="reset_title">Redefinir app</string>
+    <string name="reset_summary">Apaga configurações, bloqueio, índice, miniaturas e o login do Drive</string>
+    <string name="reset_msg">Apaga as configurações, o bloqueio, o índice de busca, o cache de miniaturas, a lista de pastas e o login do Google Drive. Seus arquivos não são tocados. O app reinicia do zero.</string>
+    <string name="reset_msg_forgot">Não há como recuperar a senha. Você pode redefinir o app: isso apaga as configurações, o bloqueio, o índice de busca, o cache de miniaturas, a lista de pastas e o login do Google Drive. Seus arquivos não são tocados.</string>
+    <string name="reset_confirm">Redefinir</string>
+    <string name="reset_running">Redefinindo…</string>
+
+    <!-- Edição de arquivos (fase 7) -->
+    <string name="rename_item">Renomear</string>
+    <string name="copy">Copiar</string>
+    <string name="move">Mover</string>
+    <string name="delete">Apagar</string>
+    <string name="select">Selecionar</string>
+    <string name="select_all">Selecionar tudo</string>
+    <string name="new_folder">Nova pasta</string>
+    <string name="upload_files">Enviar arquivos para cá</string>
+    <string name="paste_here">Colar aqui</string>
+    <string name="name_hint">Nome</string>
+    <string name="name_invalid">Nome inválido. Não use / \\ : * ? \" &lt; &gt; |</string>
+    <plurals name="selected_count">
+        <item quantity="one">%d selecionado</item>
+        <item quantity="other">%d selecionados</item>
+    </plurals>
+    <plurals name="clip_copy">
+        <item quantity="one">%d item para copiar</item>
+        <item quantity="other">%d itens para copiar</item>
+    </plurals>
+    <plurals name="clip_move">
+        <item quantity="one">%d item para mover</item>
+        <item quantity="other">%d itens para mover</item>
+    </plurals>
+    <plurals name="delete_title">
+        <item quantity="one">Apagar %d item?</item>
+        <item quantity="other">Apagar %d itens?</item>
+    </plurals>
+    <string name="delete_local_msg">Pastas do aparelho não têm lixeira: isso não pode ser desfeito. Pastas selecionadas são apagadas com tudo o que há dentro.</string>
+    <string name="delete_drive_msg">Os itens vão para a lixeira do Google Drive (recuperáveis por 30 dias).</string>
+    <string name="clip_hint">Abra a pasta de destino e toque em \"Colar aqui\".</string>
+    <string name="op_creating">Criando pasta…</string>
+    <string name="op_renaming">Renomeando…</string>
+    <string name="op_deleting">Apagando…</string>
+    <string name="op_copying">Copiando…</string>
+    <string name="op_moving">Movendo…</string>
+    <string name="op_uploading">Enviando…</string>
+    <string name="op_item_of">Item %1$d de %2$d</string>
+    <string name="op_item_of_bytes">Item %1$d de %2$d · %3$s de %4$s</string>
+    <string name="op_done">Pronto</string>
+    <string name="op_cancelled">Operação cancelada. O que já tinha sido feito foi mantido.</string>
+    <plurals name="op_failed">
+        <item quantity="one">%1$d item falhou: %2$s</item>
+        <item quantity="other">%1$d itens falharam. Primeiro erro: %2$s</item>
+    </plurals>
+    <string name="err_shortcut">é um atalho do Drive (edite na pasta original)</string>
+    <string name="err_google_doc">documento Google não pode ser copiado para o aparelho</string>
+    <string name="err_into_itself">não dá para colocar uma pasta dentro dela mesma</string>
+    <string name="err_no_permission">sem permissão para alterar este item</string>
+    <string name="err_generic">erro de leitura ou gravação</string>
+    <string name="err_network">sem conexão</string>
+    <string name="write_needed_title">Permitir edição</string>
+    <string name="write_needed_msg">Para editar arquivos desta pasta, o Index precisa de permissão de escrita. Toque em Continuar e confirme a mesma pasta no seletor do sistema (só uma vez).</string>
+    <string name="write_needed_continue">Continuar</string>
+    <!-- Pastas protegidas (fase 8) -->
+    <string name="protected_folders">Pastas protegidas</string>
+    <string name="vault_protect">Proteger pasta</string>
+    <string name="vault_protect_title">Proteger pasta</string>
+    <string name="vault_protect_msg">A pasta some do Index: listagem, busca, contagens e miniaturas. Os arquivos não são movidos nem alterados, e outros apps continuam vendo a pasta normalmente.\n\nPara abrir: menu ⋮ → Pastas protegidas.</string>
+    <string name="vault_protect_continue">Continuar</string>
+    <string name="vault_method_title">Como abrir esta pasta</string>
+    <string name="vault_method_app">Senha do app</string>
+    <string name="vault_method_app_off">Senha do app (ative o bloqueio do app nas Configurações)</string>
+    <string name="vault_method_device">Bloqueio do celular (quem desbloqueia o celular abre a pasta)</string>
+    <string name="vault_method_device_off">Bloqueio do celular (o celular não tem bloqueio de tela)</string>
+    <string name="vault_method_own">Senha própria (PIN ou senha)</string>
+    <string name="vault_gate_first">Sem bloqueio no app nem no celular: crie uma senha para abrir as pastas protegidas.</string>
+    <string name="vault_gate_create">Crie uma senha para abrir as pastas protegidas.</string>
+    <string name="vault_protected_done">Pasta protegida. Para abrir: menu ⋮ → Pastas protegidas.</string>
+    <string name="vault_protect_failed">Não foi possível proteger a pasta.</string>
+    <string name="vault_empty">Nenhuma pasta protegida.\n\nPara proteger, toque e segure uma pasta e escolha ⋮ → Proteger pasta, ou use Gerenciar pastas.</string>
+    <string name="vault_change_password">Trocar senha</string>
+    <string name="vault_unprotect">Remover proteção</string>
+    <string name="vault_unprotect_msg">\"%1$s\" volta a aparecer no Index (listagem, busca e contagens).</string>
+    <string name="vault_unprotected">Proteção removida.</string>
+    <string name="vault_uses_app">senha do app</string>
+    <string name="vault_uses_device">bloqueio do celular</string>
+    <string name="vault_uses_own">senha própria</string>
+    <string name="vault_relock">Ocultar de novo após…</string>
+    <string-array name="vault_relock_options">
+        <item>Sair do app (imediatamente)</item>
+        <item>1 minuto fora do app</item>
+        <item>5 minutos fora do app</item>
+        <item>15 minutos fora do app</item>
+    </string-array>
+    <!-- Seleção aleatória (fase 9) -->
+    <string name="random">Aleatório</string>
+    <string name="random_tooltip">Aleatório (toque longo: opções)</string>
+    <plurals name="random_banner">
+        <item quantity="one">%1$d aleatório de %2$s</item>
+        <item quantity="many">%1$d aleatórios de %2$s</item>
+        <item quantity="other">%1$d aleatórios de %2$s</item>
+    </plurals>
+    <string name="random_again">Sortear de novo</string>
+    <string name="random_full">Lista completa</string>
+    <string name="random_options">Seleção aleatória</string>
+    <string name="random_count">Quantidade</string>
+    <string name="random_custom">Outra</string>
+    <string name="random_custom_hint">Quantidade (1 a 1000)</string>
+    <string name="random_type">Tipo</string>
+    <string name="random_type_both">Fotos e vídeos</string>
+    <string name="random_type_photos">Só fotos</string>
+    <string name="random_type_videos">Só vídeos</string>
+    <string name="random_subfolders">Incluir subpastas</string>
+    <string name="random_defaults_note">Os valores ficam salvos como padrão (também em Configurações).</string>
+    <string name="random_draw">Sortear</string>
+    <string name="random_none_both">Nenhuma foto ou vídeo para sortear aqui.</string>
+    <string name="random_none_photos">Nenhuma foto para sortear aqui.</string>
+    <string name="random_none_videos">Nenhum vídeo para sortear aqui.</string>
+    <string name="random_no_results">Pesquise algo antes de sortear.</string>
+    <string name="section_random">Seleção aleatória</string>
+    <string name="random_defaults">Padrões do sorteio</string>
+    <string name="random_with_subfolders">com subpastas</string>
+    <string name="random_without_subfolders">sem subpastas</string>
+    <!-- Pré-carga de miniaturas (fase 10) -->
+    <string name="preload_all">Carregar todas as miniaturas</string>
+    <string name="preload_progress">Miniaturas: %1$s / %2$s (%3$s)</string>
+    <string name="preload_nothing">Nenhuma foto ou vídeo nesta lista.</string>
+    <string name="preload_disk_title">Cache de miniaturas</string>
+    <string name="preload_disk_msg">As miniaturas que faltam (cerca de %1$s) não cabem no limite do cache (%2$s). As menos usadas serão apagadas para abrir espaço. Continuar?</string>
+    <string name="preload_continue">Continuar</string>
+    <string name="preload_done">Miniaturas carregadas.</string>
+    <string name="preload_done_window">Miniaturas prontas no disco; %1$s na memória, o resto entra conforme a rolagem.</string>
+    <string name="preload_skipped">%1$s do Drive ficaram de fora (sem Wi-Fi).</string>
+    <string name="preload_active">Miniaturas na memória</string>
+    <string name="preload_status_running">Carregando miniaturas: %1$s / %2$s (%3$s na memória).</string>
+    <string name="preload_status_holding">%1$s miniaturas na memória (%2$s). A memória é liberada sozinha pelos prazos definidos em Configurações.</string>
+    <string name="preload_release">Liberar memória</string>
+    <string name="preload_stop">Parar</string>
+    <string name="close">Fechar</string>
+    <string name="preload_wifi">Pré-carga do Drive só via Wi-Fi</string>
+    <string name="release_leave">Liberar memória ao sair da lista após</string>
+    <string name="release_bg">Liberar com o app em segundo plano após</string>
+    <string name="release_idle">Liberar sem interação após</string>
+    <string name="preload_hint">A pré-carga é feita pelo menu ⋮ → Carregar todas as miniaturas (pasta, pesquisa ou seleção aleatória).</string>
+    <string-array name="release_minutes">
+        <item>1 minuto</item>
+        <item>2 minutos</item>
+        <item>5 minutos</item>
+        <item>10 minutos</item>
+    </string-array>
+    <string name="drive_write_needed">Para editar no Drive, confirme de novo a conta Google (o Index agora pede acesso de escrita).</string>
+
+    <!-- Pasta inicial e Recentes -->
+    <string name="recent_title">Recentes</string>
+    <string name="recent_meta">Arquivos novos do aparelho · últimos %1$d dias</string>
+    <string name="recent_meta_type">%1$s · últimos %2$d dias</string>
+    <string name="recent_filter">Filtrar</string>
+    <string name="recent_all">Todos os tipos</string>
+    <string name="recent_images">Fotos</string>
+    <string name="recent_videos">Vídeos</string>
+    <string name="recent_audio">Áudio</string>
+    <string name="recent_docs">Documentos</string>
+    <string name="recent_apks">APKs</string>
+    <string name="recent_7">Últimos 7 dias</string>
+    <string name="recent_30">Últimos 30 dias</string>
+    <string name="recent_90">Últimos 90 dias</string>
+    <string name="recent_needs_access">Toque para permitir o acesso a todos os arquivos</string>
+    <string name="start_folder_menu">Definir como pasta inicial</string>
+    <string name="start_folder_set">Pasta inicial: %1$s</string>
+    <string name="sub_opening">Ao abrir o app</string>
+    <string name="start_folder">Pasta inicial</string>
+    <string name="start_folder_none">Lista de pastas</string>
+    <string name="show_recent">Mostrar a pasta Recentes</string>
+</resources>

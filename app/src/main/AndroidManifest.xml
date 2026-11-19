@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Rede só para o Google Drive. Acesso local é todo via SAF (sem permissão de armazenamento). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Streaming do Drive para outros apps: sem serviço em primeiro plano o Android corta
+         a rede do app ~20 s depois que o player assume a tela. Permissões automáticas (sem pedido). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Cópias, movimentações e envios continuam com o app em segundo plano (fase 7).
+         Ativo só durante a operação. Permissão automática (sem pedido). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Desbloqueio por biometria / senha do celular (BiometricPrompt da plataforma).
+         Permissão normal, concedida na instalação; não dá acesso a dados biométricos. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Fase 10: "pré-carga do Drive só via Wi-Fi" (só lê o tipo de conexão). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- "Adicionar pasta local" (Android 11+): seletor próprio pelo caminho, que aceita também as
+         pastas que o seletor do sistema (SAF) recusa (Download inteira, raiz do armazenamento).
+         Pedida só ao adicionar uma pasta; ativada pelo usuário nas configurações do Android.
+         Recusada: o app continua com o SAF. Pastas antigas (SAF) seguem como estão. -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        xmlns:tools="http://schemas.android.com/tools"
+        tools:ignore="ScopedStorage" />
+
+    <!-- "Abrir com..." (fase 12): ver quais apps abrem vídeo, foto, áudio e outros arquivos,
+         para a lista própria de escolha. Não é permissão; não dá acesso a dados de outros apps. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content" android:mimeType="video/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content" android:mimeType="image/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content" android:mimeType="audio/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content" android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <!-- "Compartilhar": lista própria de apps que recebem arquivos. -->
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND_MULTIPLE" />
+            <data android:mimeType="*/*" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".IndexApp"
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Index">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Leitor de documentos para outros apps ("Abrir com" → Index). Só os formatos que o
+             leitor entende; tela própria, sem o resto do app. Tarefa própria quando aberta de fora
+             com NEW_TASK, para "voltar" não cair na lista de pastas do Index. -->
+        <activity
+            android:name=".ui.doc.DocActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="application/vnd.oasis.opendocument.text" />
+                <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+                <data android:mimeType="application/vnd.oasis.opendocument.presentation" />
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="text/rtf" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/x-markdown" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="text/tab-separated-values" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="text/xml" />
+                <data android:mimeType="application/xml" />
+            </intent-filter>
+        </activity>
+
+        <!-- Só para entregar ao app escolhido os arquivos do Drive baixados para abrir. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Streaming do Drive (descritor com acesso aleatório; nada é salvo no aparelho). -->
+        <provider
+            android:name=".data.drive.DriveStreamProvider"
+            android:authorities="${applicationId}.stream"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
+        <service
+            android:name=".data.drive.StreamService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <service
+            android:name=".data.TransferService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+    </application>
+</manifest>

@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Configurações, do uso diário ao raro: Aparência · Navegação · Abrir e compartilhar ·
+     Seleção aleatória · Google Drive · Miniaturas · Pré-carga · Segurança · Dados do app.
+     O código liga cada linha pelo id: a ordem aqui é só visual. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="24dp">
+
+        <!-- ===== Aparência ===== -->
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_appearance" />
+
+        <RadioGroup
+            android:id="@+id/theme_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp">
+
+            <RadioButton
+                android:id="@+id/theme_system"
+                style="@style/IndexRow"
+                android:text="@string/theme_system" />
+
+            <RadioButton
+                android:id="@+id/theme_light"
+                style="@style/IndexRow"
+                android:text="@string/theme_light" />
+
+            <RadioButton
+                android:id="@+id/theme_dark"
+                style="@style/IndexRow"
+                android:text="@string/theme_dark" />
+
+            <RadioButton
+                android:id="@+id/theme_schedule"
+                style="@style/IndexRow"
+                android:text="@string/theme_schedule" />
+        </RadioGroup>
+
+        <include
+            android:id="@+id/row_schedule_start"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_schedule_end"
+            layout="@layout/row_setting" />
+
+        <TextView
+            style="@style/IndexSubHeader"
+            android:text="@string/sub_theme_choice" />
+
+        <include
+            android:id="@+id/row_light_theme"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_dark_theme"
+            layout="@layout/row_setting" />
+
+        <!-- ===== Navegação ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_browsing" />
+
+        <TextView
+            style="@style/IndexSubHeader"
+            android:text="@string/sub_opening" />
+
+        <include
+            android:id="@+id/row_start_folder"
+            layout="@layout/row_setting" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/show_recent"
+            style="@style/IndexRow"
+            android:text="@string/show_recent" />
+
+        <TextView
+            style="@style/IndexSubHeader"
+            android:text="@string/sub_display" />
+
+        <include
+            android:id="@+id/row_view_mode"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_columns"
+            layout="@layout/row_setting" />
+
+        <TextView
+            style="@style/IndexSubHeader"
+            android:text="@string/sub_sort" />
+
+        <include
+            android:id="@+id/row_sort"
+            layout="@layout/row_setting" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sort_desc"
+            style="@style/IndexRow"
+            android:text="@string/sort_desc" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/folders_first"
+            style="@style/IndexRow"
+            android:text="@string/folders_first" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/sort_default_hint"
+            android:textAppearance="@style/TextAppearance.Index.Secondary" />
+
+        <TextView
+            style="@style/IndexSubHeader"
+            android:text="@string/sub_files" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/show_hidden"
+            style="@style/IndexRow"
+            android:text="@string/show_hidden" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/internal_viewer"
+            style="@style/IndexRow"
+            android:text="@string/internal_viewer" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/internal_docs"
+            style="@style/IndexRow"
+            android:text="@string/internal_docs" />
+
+        <!-- ===== Abrir e compartilhar ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_open_share" />
+
+        <include
+            android:id="@+id/row_players"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_image_viewers"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_share_apps"
+            layout="@layout/row_setting" />
+
+        <!-- ===== Seleção aleatória ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_random" />
+
+        <include
+            android:id="@+id/row_random"
+            layout="@layout/row_setting" />
+
+        <!-- ===== Google Drive ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_drive" />
+
+        <include
+            android:id="@+id/row_drive_account"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_drive_open"
+            layout="@layout/row_setting" />
+
+        <!-- ===== Miniaturas ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_thumbs" />
+
+        <TextView
+            style="@style/IndexSubHeader"
+            android:text="@string/sub_storage" />
+
+        <include
+            android:id="@+id/row_thumb_size"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_thumb_limit"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_thumb_location"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_thumb_clear"
+            layout="@layout/row_setting" />
+
+        <!-- ===== Pré-carga ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_preload" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/preload_hint"
+            android:textAppearance="@style/TextAppearance.Index.Secondary" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/preload_wifi"
+            style="@style/IndexRow"
+            android:text="@string/preload_wifi" />
+
+        <include
+            android:id="@+id/row_release_leave"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_release_bg"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_release_idle"
+            layout="@layout/row_setting" />
+
+        <!-- ===== Segurança ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_security" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/lock_enabled"
+            style="@style/IndexRow"
+            android:text="@string/lock_enable" />
+
+        <LinearLayout
+            android:id="@+id/lock_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include
+                android:id="@+id/row_lock_method"
+                layout="@layout/row_setting" />
+
+            <include
+                android:id="@+id/row_lock_change"
+                layout="@layout/row_setting" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/lock_biometric"
+                style="@style/IndexRow"
+                android:text="@string/lock_biometric_switch" />
+
+            <include
+                android:id="@+id/row_lock_relock"
+                layout="@layout/row_setting" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/lock_secure"
+                style="@style/IndexRow"
+                android:text="@string/lock_secure" />
+        </LinearLayout>
+
+        <!-- ===== Dados do app (ação destrutiva, por último) ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_data" />
+
+        <include
+            android:id="@+id/row_reset"
+            layout="@layout/row_setting" />
+
+        <!-- ===== Sobre ===== -->
+        <View style="@style/IndexDivider" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/section_about" />
+
+        <TextView
+            android:id="@+id/about_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textAppearance="@style/TextAppearance.Index.Body" />
+    </LinearLayout>
+</ScrollView>

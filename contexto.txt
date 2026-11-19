@@ -1,0 +1,346 @@
+﻿Index File Manager
+
+# Projeto: Gerenciador de arquivos Android ultraleve (foco em fotos e vídeos)
+
+## Objetivo
+Desenvolver um aplicativo Android nativo de gerenciamento/navegação de arquivos, com prioridade
+máxima em LEVEZA (tamanho do APK, uso de RAM, tempo de abertura e fluidez de rolagem). O uso
+principal é navegar em pastas com muitas fotos e vídeos, com miniaturas (thumbs) em cache para
+visualização instantânea, embora possa exibir qualquer arquivo. Deve suportar pastas locais e pastas do Google Drive e exibi-las ao usuario como se fossem a mesma coisa.
+
+## Restrições de leveza (requisitos não-funcionais — prioridade máxima)
+- Linguagem: Kotlin. UI com Android Views + RecyclerView (NÃO usar Jetpack Compose).
+- Dependências mínimas. Proibido: Glide, Coil, Picasso, Room, Retrofit, OkHttp, Gson, RxJava,
+  Hilt/Dagger, Firebase. Usar APIs da plataforma:
+  - Rede: HttpURLConnection
+  - JSON: org.json
+  - Banco: SQLiteOpenHelper puro
+  - Concorrência: kotlinx-coroutines-android (única exceção aceita) ou Executors
+  - Imagens: BitmapFactory / ImageDecoder / ContentResolver.loadThumbnail
+- Única dependência pesada permitida: autenticação Google (Credential Manager +
+  play-services-auth AuthorizationClient), necessária para o Drive.
+- Evitar Material Components se possível; usar AppCompat com tema DayNight e estilos próprios.
+- R8/ProGuard ativado com shrinkResources. Meta: APK release < 3 MB.
+- Meta de desempenho: abertura a frio < 500 ms; rolagem a 60 fps em pasta com 5.000 itens;
+  consumo de RAM baixo (bitmaps de thumb pequenos, RGB_565 quando possível).
+- minSdk 26, targetSdk mais recente estável.
+
+## Funcionalidades
+
+### 1. Pastas permitidas (o app só exibe o que o usuário liberar)
+- Tela "Gerenciar pastas" acessível pelo menu principal.
+- Adicionar pasta local via Storage Access Framework (ACTION_OPEN_DOCUMENT_TREE), tomando
+  permissão persistente (takePersistableUriPermission).
+- Adicionar pasta do Google Drive: após login, navegador simples de pastas do Drive para
+  escolher qual incluir.
+- Listar pastas incluídas (nome, origem Local/Drive, quantidade de itens se já indexada).
+- Ações por pasta: renomear apelido, remover (liberar permissão persistente / remover do app),
+  reindexar, limpar thumbs daquela pasta.
+- Tela inicial = lista dessas pastas raiz. Nada fora delas é exibido nem pesquisado.
+- Se uma permissão for revogada ou a pasta sumir, marcar como indisponível e oferecer readicionar.
+
+### 2. Navegação
+- Listagem de arquivos e subpastas dentro das pastas permitidas.
+- Dois modos de visualização alternáveis: Grade (thumbs, nº de colunas ajustável) e Lista
+  (thumb pequena + nome + tamanho + data).
+- Barra de caminho (breadcrumb) clicável e botão voltar respeitando a hierarquia.
+- Para pastas locais, consultar diretamente via DocumentsContract.buildChildDocumentsUriUsingTree
+  com projeção mínima (id, nome, mime, tamanho, data) em um único cursor. NÃO usar DocumentFile
+  (é lento, faz uma query por arquivo).
+- Abrir arquivo: Intent ACTION_VIEW com o app padrão do sistema (sem visualizador embutido
+  pesado). Opcional: visualizador simples de imagem em tela cheia com swipe entre fotos da pasta.
+
+### 3. Ordenação
+- Critérios: Nome, Tamanho, Tipo (mime/extensão), Data de modificação.
+- Crescente/decrescente.
+- Opção "pastas primeiro" (padrão ativado).
+- Ordenação por nome "natural" (foto2 antes de foto10), sem diferenciar maiúsculas/acentos.
+- Preferência de ordenação salva por pasta (com padrão global).
+
+### 4. Pesquisa
+- Campo de busca na barra superior.
+- Escopo selecionável: pasta atual (com subpastas) ou todas as pastas permitidas.
+- Busca por nome (contém, sem diferenciar maiúsculas/acentos).
+- Filtros rápidos opcionais: Fotos, Vídeos, Todos.
+- Resultados podem ser ordenados por Nome, Tamanho, Tipo e Data de modificação (crescente/
+  decrescente), com as mesmas opções da navegação, e exibidos em grade ou lista.
+- Cada resultado mostra o caminho relativo e permite "ir para a pasta".
+- Implementação: índice em SQLite (tabela de arquivos com pasta_raiz, caminho, nome_normalizado,
+  mime, tamanho, data_mod, origem, id_remoto). Indexação incremental em segundo plano
+  (WorkManager NÃO — usar coroutine/serviço leve iniciado ao abrir o app e ao reindexar).
+  Busca com consulta SQL + ORDER BY; debounce de 250 ms na digitação.
+
+### 5. Thumbnails (cache persistente)
+- Gerar thumbs de imagens e vídeos e salvar em disco em getCacheDir()/thumbs (ou filesDir,
+  configurável), formato WebP com qualidade ~75, lado maior ~256 px.
+- Chave do cache: hash de (origem + id/caminho + data_mod + tamanho). Se o arquivo mudar, a thumb
+  é regenerada automaticamente.
+- Locais: ContentResolver.loadThumbnail (API 29+); fallback BitmapFactory com inSampleSize
+  e MediaMetadataRetriever.getFrameAtTime para vídeo (API 26–28).
+- Cache em memória LruCache dimensionado por bytes (~1/8 da memória do app).
+- Carregamento assíncrono com cancelamento quando o item sai da tela (evitar trabalho inútil
+  na rolagem rápida); fila com prioridade para itens visíveis.
+- Pré-geração opcional de thumbs da pasta inteira em segundo plano.
+- Indicador de duração/ícone de "play" sobre thumbs de vídeo.
+- Tela de configurações: tamanho atual do cache, limite máximo (ex.: 200 MB / 500 MB / 1 GB /
+  ilimitado), botão "limpar cache". Remoção LRU ao atingir o limite.
+
+### 6. Google Drive
+- Login com conta Google; escopo drive.readonly (ou drive.file, se suficiente).
+- API Drive REST v3 via HttpURLConnection: listar arquivos de pasta
+  (files.list com q="'ID' in parents and trashed=false", fields mínimos:
+  id,name,mimeType,size,modifiedTime,thumbnailLink,videoMediaMetadata, paginação por pageToken).
+- Thumbs do Drive: baixar via thumbnailLink (ajustando o parâmetro de tamanho, ex. =s256) e
+  SALVAR no mesmo cache em disco, chave baseada em fileId + modifiedTime. Assim a navegação
+  em pastas do Drive já visitadas fica instantânea e funciona offline (só a listagem/thumbs).
+- Cache da listagem do Drive no SQLite para exibir imediatamente e atualizar em segundo plano.
+- Abrir arquivo do Drive: baixar para cache temporário e abrir com ACTION_VIEW, ou abrir o link
+  no app do Drive (opção configurável).
+- Ordenação e busca funcionam igualmente para itens do Drive (via índice local).
+- Tratar expiração de token, falta de rede e limite de taxa (backoff exponencial).
+
+### 7. Tema
+- Claro, Escuro e Seguir o sistema (AppCompatDelegate.setDefaultNightMode).
+- Escolha salva em SharedPreferences e aplicada antes do setContentView (sem "piscar").
+- Tema escuro com preto real (#000000) opcional para telas OLED.
+
+### 8. Configurações (tela simples)
+- Tema; modo padrão (grade/lista) e colunas; ordenação padrão; pastas primeiro;
+  mostrar arquivos ocultos; limite do cache de thumbs; limpar cache; conta Google (entrar/sair).
+
+### 9. Bloqueio do app por senha
+- Opção nas configurações para ativar bloqueio: PIN numérico (4 a 8 dígitos) ou senha
+  alfanumérica.
+- Na primeira ativação: definir senha + confirmação.
+- Tela de bloqueio exibida ao abrir o app e ao voltar do segundo plano após um tempo
+  configurável (imediatamente, 30 s, 1 min, 5 min).
+- Desbloqueio opcional por biometria usando android.hardware.biometrics.BiometricPrompt da
+  plataforma (API 28+), SEM a biblioteca androidx.biometric. Em API 26–27, apenas senha.
+  A biometria nunca substitui a senha: a senha sempre funciona como alternativa.
+- Armazenamento seguro: nunca salvar a senha em texto. Usar PBKDF2WithHmacSHA256
+  (javax.crypto, nativo) com salt aleatório e alto número de iterações; guardar apenas hash
+  e salt em SharedPreferences. Comparação em tempo constante.
+- Proteção contra tentativas: após 5 erros, espera de 5 min a cada novo erro
+  (decidido no teste da fase 6; antes era progressiva).
+- Opção "ocultar conteúdo na tela de apps recentes" (FLAG_SECURE), ativada por padrão quando
+  o bloqueio estiver ligado; bloqueia também capturas de tela do app.
+- Alterar senha exige a senha atual. Desativar bloqueio exige a senha atual.
+- Esqueci a senha: não há recuperação. Oferecer "redefinir app", que apaga configurações,
+  índice, cache de thumbs e login do Drive (os arquivos do usuário NUNCA são tocados).
+- A tela de bloqueio deve ser leve e aparecer antes de qualquer conteúdo (nenhuma thumb ou nome
+  de pasta pode ficar visível por trás dela).
+
+## Arquitetura
+- Activity única com Fragments simples (ou Activity por tela, se mais leve), sem bibliotecas
+  de navegação.
+- Camadas: ui / data (LocalSource via SAF, DriveSource via REST, IndexDb SQLite) / thumbs
+  (ThumbnailManager com cache de memória + disco).
+- Interface comum FileSource com listChildren(), getThumbnail(), open(), para tratar Local e
+  Drive de forma uniforme.
+- RecyclerView com DiffUtil, setHasFixedSize, ViewHolders leves, sem layouts aninhados
+  profundos.
+- Nenhuma permissão ampla de armazenamento (MANAGE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE):
+  todo acesso local via SAF. Permissões no manifesto: apenas INTERNET.
+
+## Entregáveis
+1. Projeto Gradle completo (Kotlin DSL), compilável com ./gradlew assembleRelease.
+2. README com: como configurar o OAuth do Google (Cloud Console, SHA-1, client ID),
+   como compilar e decisões de leveza adotadas.
+3. Lista final de dependências com justificativa de cada uma.
+4. Relatório de tamanho do APK release.
+
+## Critérios de aceite
+- Só aparecem pastas adicionadas pelo usuário; removê-las faz sumirem da navegação e da busca.
+- Reabrir uma pasta já visitada (local ou Drive) exibe as thumbs instantaneamente, sem regerar.
+- Ordenação por nome, tamanho, tipo e data funciona na navegação e nos resultados de busca,
+  em ambos os sentidos.
+- Rolagem fluida em pasta com milhares de fotos.
+- Tema claro/escuro/sistema funcionando e persistido.
+- APK release dentro da meta de tamanho, sem dependências fora da lista permitida.
+
+## Funcionalidades adicionais (acrescentadas em 10/11/2026)
+
+### A. Seleção aleatória de arquivos
+- Botão "Aleatório" (ícone de dado) na barra superior da navegação e na tela de resultados
+  da pesquisa.
+- Ao tocar, sorteia N arquivos e passa a exibir SOMENTE esses arquivos, no lugar da lista
+  completa. Exemplo: pasta com 1.000 arquivos → exibe 10 sorteados; pesquisa com 1.000
+  resultados → exibe 10 sorteados entre eles.
+- Origem do sorteio:
+  - na navegação: arquivos da pasta atual (opção para incluir subpastas);
+  - nos resultados da pesquisa: apenas os itens retornados pela busca, respeitando os filtros
+    ativos.
+- Parâmetros (painel aberto por toque longo no botão, com valores padrão salvos nas
+  configurações): quantidade 5, 10, 20, 50, 100 ou personalizada (padrão 10); tipo só fotos,
+  só vídeos ou ambos; incluir subpastas (somente na navegação).
+- Se a origem tiver menos arquivos que a quantidade pedida, exibe todos, em ordem embaralhada.
+- A seleção sorteada: pode ser ordenada por nome, tamanho, tipo e data; vista em grade ou
+  lista; tem "Sortear novamente" e "Voltar à lista completa"; mostra aviso no topo, ex.:
+  "10 aleatórios de 1.000".
+- Sorteio sem repetição dentro da mesma seleção (embaralhamento).
+- Pastas bloqueadas nunca entram no sorteio.
+- Arquivos abrem sempre no visualizador/player externo (o app NÃO terá visualizador interno).
+
+### B. Senha para abrir o app
+- Bloqueio opcional na abertura do app (seção 9), com escolha do método conforme o item D.
+
+### C. Pastas bloqueadas (ocultas no Index)
+- Qualquer pasta permitida (raiz ou subpasta, local ou Drive) pode ser marcada como bloqueada.
+- O bloqueio vale SOMENTE dentro do Index: os arquivos não são movidos, renomeados nem
+  criptografados, e nada é criado na pasta (sem .nomedia). Outros apps (Galeria, gerenciadores,
+  Drive web) continuam vendo a pasta normalmente.
+- Dentro do Index a pasta bloqueada fica TOTALMENTE OCULTA: não aparece na listagem, na
+  pesquisa, no sorteio aleatório, na pré-carga de thumbs nem em contagens de itens, tamanhos ou
+  caminhos exibidos. Nada na interface deve indicar que ela existe.
+- Acesso: menu "Pastas protegidas" (menu principal) → autenticação → lista das pastas ocultas,
+  que podem ser abertas, gerenciadas ou ter o bloqueio removido.
+- Após o desbloqueio, a pasta fica acessível somente durante a sessão: volta a ocultar ao sair
+  dela, ao fechar o app ou após o tempo configurado. Enquanto desbloqueada, pesquisa e sorteio
+  podem ser feitos dentro dela.
+- Cada pasta pode usar: a senha do app, a senha do celular ou uma senha própria (item D).
+- Thumbs e entradas de índice de pastas bloqueadas ficam separadas e criptografadas (AES-GCM
+  com chave no Android Keystore), fora do cache comum e do banco de busca.
+- Remover o bloqueio exige autenticação.
+
+### D. Escolha do método de autenticação
+- Ao criar qualquer proteção (abertura do app ou pasta), oferecer:
+  1. bloqueio do celular (PIN/padrão/senha do aparelho e biometria, se cadastrada);
+  2. senha nova específica (PIN ou alfanumérica, PBKDF2 como na seção 9), biometria opcional.
+- APIs nativas, sem bibliotecas: API 30+ BiometricPrompt com
+  setAllowedAuthenticators(BIOMETRIC_STRONG | DEVICE_CREDENTIAL); API 29 BiometricPrompt com
+  setDeviceCredentialAllowed(true); API 26–28 KeyguardManager.createConfirmDeviceCredentialIntent.
+- Sem bloqueio de tela no celular: opção 1 desabilitada com explicação.
+- Se o bloqueio do celular for removido depois, o app detecta na próxima autenticação e exige
+  criar uma senha própria (a proteção nunca simplesmente desliga).
+- Aviso: com a senha do celular, qualquer pessoa que saiba desbloquear o aparelho abre o app/pasta.
+
+### E. Compatibilidade com tablet
+- Layout por largura (sw600dp, w840dp), sem bibliotecas; telas largas em dois painéis (pastas à
+  esquerda, conteúdo à direita).
+- Colunas da grade pela largura disponível (thumb mínima configurável), recalculadas ao girar
+  ou redimensionar (multi-janela); paisagem e retrato sem perder a rolagem.
+- Teclado físico e mouse: setas, Enter abre, Backspace volta, Ctrl+F pesquisa, clique direito
+  abre menu de contexto.
+- Thumbs maiores (ex.: 384 px) quando a coluna for larga.
+
+### F. Temas separados para modo diurno e noturno
+- Tema claro e tema escuro escolhidos de forma independente; modo: seguir o sistema, sempre
+  claro, sempre escuro ou por horário (configurável, ex.: escuro das 19h às 7h).
+- Troca sem reiniciar manualmente e sem "piscar" na abertura.
+
+### G. Catálogo de temas (mínimo 10 claros e 10 escuros)
+- Só recursos de cor (XML/estilos), sem imagens. Cada tema define fundo, superfície, texto
+  primário/secundário, destaque, seleção, barra superior, barra de navegação e avisos.
+- Contraste mínimo WCAG AA (4,5:1). Tela de escolha com prévia (miniatura de grade simulada).
+- Claros: Papel, Areia, Céu, Menta, Lavanda, Pêssego, Nuvem, Limão, Rosa Antigo, Ártico.
+- Escuros: OLED Puro, Grafite, Meia-Noite, Floresta, Vinho, Âmbar, Ametista, Oceano, Café, Neon.
+
+### H. Pré-carregar todas as thumbs da lista atual (função opcional)
+- Padrão inalterado (thumbs conforme a rolagem); só age ao tocar em "Carregar todas as
+  miniaturas" (pasta, resultados da pesquisa, seleção aleatória). Substitui a opção antiga
+  "pré-gerar miniaturas ao abrir a pasta".
+- Processa as thumbs de todos os itens da lista (nunca os originais), locais e Drive: gera/baixa
+  as que faltam no disco e carrega na RAM (RGB_565, tamanho da célula).
+- Orçamento de RAM pelo ActivityManager.getMemoryClass/getLargeMemoryClass (pode usar
+  largeHeap); se não couber tudo, mantém o máximo e carrega do disco uma janela de ~3 telas à
+  frente e atrás; nunca ultrapassa o orçamento; libera em onTrimMemory.
+- Progresso (ex.: 1.240 / 5.000) com cancelar, navegação livre durante; 2–4 tarefas em paralelo;
+  no Drive, opção "só via Wi-Fi"; respeita o limite do cache em disco (avisa antes se não couber).
+- Liberação automática da RAM (o disco fica): sair da lista sem voltar em 1 min; app em segundo
+  plano por 2 min; sem interação por 5 min; onTrimMemory (imediato). Voltar dentro do prazo
+  cancela a liberação; pré-carga em andamento é cancelada. Prazos configuráveis (1, 2, 5, 10 min).
+- Indicador discreto (ícone de raio) na barra superior enquanto ativa.
+
+### I. Edição de arquivos
+- Renomear, apagar, mover, copiar, criar pasta e enviar arquivos, em pastas locais e no Drive.
+- Pastas locais passam a exigir permissão SAF de leitura e escrita (pastas já adicionadas
+  precisam ser readicionadas uma vez). Drive passa do escopo drive.readonly para drive.
+- Confirmação antes de apagar; índice, cache de listagem e thumbs atualizados após cada operação.
+
+## Exceção aprovada às permissões
+- FOREGROUND_SERVICE e FOREGROUND_SERVICE_MEDIA_PLAYBACK: serviço em primeiro plano durante o
+  streaming do Drive para players externos (sem ele o Android corta a rede do app em segundo
+  plano). Ativo enquanto algum player tiver o arquivo aberto.
+- FOREGROUND_SERVICE_DATA_SYNC (fase 7, v0.7.1): cópias, movimentações e envios continuam com o
+  app em segundo plano. Ativo só durante a operação.
+- ACCESS_NETWORK_STATE (fase 10, aprovada): opção "pré-carga do Drive só via Wi-Fi"; só lê o
+  tipo de conexão.
+
+## Faseamento do desenvolvimento
+Desenvolver em fases. Ao final de cada fase: o projeto deve compilar e rodar, salvar snapshot
+local em dist/ (sem git), apresentar resumo do que foi feito, tamanho atual do APK release e
+pendências, e AGUARDAR minha aprovação antes de iniciar a fase seguinte.
+
+### Concluídas
+- Fase 0 — Fundação (v0.1)
+- Fase 1 — Pastas permitidas e navegação local (v0.2)
+- Fase 2 — Thumbnails (v0.3)
+- Fase 3 — Índice e pesquisa (v0.4)
+- Fase 5 — Google Drive + rolagem rápida + streaming para players externos (v0.5 a v0.5.4)
+  (testados VLC e player nativo; aprovada)
+- Fase 6 — Autenticação e bloqueio do app (v0.6; aprovada com a permissão USE_BIOMETRIC)
+- Fase 7 — Edição de arquivos (v0.7 e v0.7.1; aprovada com a permissão
+  FOREGROUND_SERVICE_DATA_SYNC)
+- Fase 8 — Pastas protegidas (v0.8; aprovada, sem permissões novas)
+- Fase 9 — Seleção aleatória (v0.9; aprovada, sem permissões novas)
+- Fase 10 — Pré-carga de miniaturas (v0.10 a v0.10.2; aprovada com ACCESS_NETWORK_STATE;
+  v0.10.2 suavizou a aceleração da rolagem para 1 → 1,5 → 2 → 4 → 6 → 8×)
+- Fase 11 — Temas (v0.11; aprovada, sem permissões novas)
+- Extra: seleção por arraste com rolagem automática (v0.11.1; aprovada)
+- Fase 12 — Tablet, teclado e mouse (v0.12 a v0.12.3; aprovada). Extras: pinça da lista até uma
+  imagem por tela; seleção no sorteio e na pesquisa; "Abrir com…" com lista própria e players
+  configuráveis (manifesto ganhou <queries>, que não é permissão).
+- Extra: visualizador de fotos interno (v0.12.4; aprovado) — zoom e região mantidos ao trocar
+  de foto, só 3 fotos na RAM, recorte nítido por região nos locais; opção para desligar.
+  Também: Compartilhar (um ou vários; Drive por streaming, sem download prévio), listas
+  configuráveis de visualizadores de imagem e de apps de compartilhar, Configurações no ⋮ de
+  todas as telas. <queries> ganhou SEND/SEND_MULTIPLE (não é permissão).
+- Fase 13 — Polimento e entrega (v0.13 e v0.13.1; aprovada em 11/11/2026): pasta protegida órfã
+  corrigida, acessibilidade básica, README completo com permissões e relatórios (abertura,
+  RAM, rolagem, tamanho); miniaturas liberadas ao sair do cache (pico após rolar 325 → 227 MB).
+
+Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-fase13.apk + -src.zip.
+- Extra pós-entrega (v0.13.2): ícone novo "fichário com abas" na paleta "noite roxa" (com camada
+  monocromática) e configurações reorganizadas em 9 seções.
+- Extra pós-entrega (v0.13.3): "Adicionar pasta local" com seletor próprio pelo caminho, que aceita
+  as pastas que o seletor do sistema recusa (Download inteira, raízes do armazenamento/cartão).
+  Permissão nova aprovada: MANAGE_EXTERNAL_STORAGE ("Acesso a todos os arquivos", ativada pelo
+  usuário; recusada, cai no SAF). Pastas antigas seguem via SAF. Android/data e obb continuam
+  bloqueadas pelo próprio Android.
+- Descartado: capa dos vídeos do Drive no quadro dos 10 s (lendo o vídeo por partes levava
+  10–20 s por capa; revertido a pedido, continua a miniatura do Google).
+- Extra pós-entrega (v0.13.4): puxar para atualizar na pasta (sem biblioteca); pasta aberta e
+  índice atualizados ao voltar ao app; círculo de "atualizando" em consultas lentas; índice passou a
+  ver arquivos novos dentro de subpastas (lia a data velha da subpasta).
+- Extra pós-entrega (v0.13.5): pasta inicial (Configurações › "Ao abrir o app": lista, Recentes,
+  pasta raiz; subpasta pelo ⋮ da pasta; subpasta apagada cai na raiz) e pasta virtual Recentes
+  (MediaStore, últimos 30 dias, até 500; sem pastas protegidas, ocultas, Android/data e obb; precisa
+  do acesso a todos os arquivos). Testado no Tab S7+ e instalado nos dois aparelhos.
+- Extra pós-entrega (v0.13.6): chave de assinatura copiada para signing/ (mesmo SHA-1; guardar
+  cópia fora do PC); apagar pasta com protegida dentro é recusado (antes a protegida ia junto).
+  Testado no S23 e depois instalado no tablet (re-pareado por código).
+- Extra pós-entrega (v0.13.7): filtros na pasta Recentes (tipo: fotos, vídeos, áudio, documentos,
+  APKs; período: 7, 30 ou 90 dias), na própria consulta à MediaStore. Testado no Tab S7+,
+  instalado nos dois. v0.13.8: linha divisória entre tipo e período no menu do filtro.
+- Extra pós-entrega (v0.14.0): leitor de documentos, só leitura e sem dependências novas: PDF
+  (PdfRenderer com zoom), docx/xlsx/pptx e odt/ods/odp (ZIP + XML na memória), doc/xls/ppt
+  (leitor OLE2 próprio), rtf, txt, md, csv, html. Convertidos em HTML num WebView sem JS nem rede.
+  Chave em Configurações (ligada por padrão). Testado no Tab S7+ com 16 arquivos de teste.
+  Correção no mesmo dia: páginas de PDF em branco (páginas pré-carregadas pela lista não recebiam
+  a imagem pronta); conferido num PDF de 20 páginas no tablet e no S23.
+- Extra pós-entrega (v0.14.1): Word (.docx) com formatação — estilos com herança, fonte (tamanho,
+  cor, realce), alinhamento, recuos, espaçamento, listas numeradas e marcadores, imagens, tabelas
+  sombreadas, caixas de texto; folha branca. .doc antigo segue só texto. Testado no Tab S7+,
+  instalado nos dois.
+- Extra pós-entrega (v0.14.2): Index no "Abrir com" de outros apps para os documentos do leitor
+  (tela própria, voltar retorna a quem chamou); .doc 97–2003 com formatação (estilos, fonte,
+  parágrafo, listas, tabelas). Testado no Tab S7+, instalado nos dois.
+- Antes do git (v0.14.3): revisão de dados pessoais e segredos. dist/ no .gitignore (zips de código
+  v0.13.6–v0.14.2 têm a chave de assinatura: não compartilhar); snapshots não levam mais signing/;
+  nome do autor tirado do Sobre e do README.
+
+Pendências (guardadas em 18/11/2026 para fazer depois):
+- Login do Drive: o projeto do Google Cloud está em "Em teste"; confirmar se o login já expirou
+  alguma vez. Se sim, ver publicação ou verificação do app.
+- Git no projeto (histórico, desfazer, levar correções ao fork PhotoDex); snapshots em dist/ seguem.
+- Recentes do Drive: pasta virtual com os arquivos novos da nuvem, com os mesmos filtros.

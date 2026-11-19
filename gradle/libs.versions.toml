@@ -1,0 +1,20 @@
+# Catálogo único de versões. Toda dependência nova precisa de justificativa
+# no README (seção "Dependências") antes de entrar aqui.
+[versions]
+agp = "9.5.1"
+appcompat = "1.7.1"
+recyclerview = "1.4.0"
+playServicesAuth = "22.0.0"
+
+[libraries]
+# Única dependência "pesada" permitida: AuthorizationClient (OAuth do Google Drive).
+# A API REST do Drive é chamada com HttpURLConnection + org.json (sem SDK do Drive).
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+# Tema DayNight retrocompatível (API 26+) e AppCompatDelegate.setDefaultNightMode.
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+# Listas/grades com reciclagem de views e DiffUtil (exigido pela especificação).
+recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+
+[plugins]
+# AGP 9 já traz o Kotlin embutido: não é preciso aplicar o plugin kotlin-android.
+android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="8dp">
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:layout_marginTop="0dp"
+            android:text="@string/random_count" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/counts"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <EditText
+            android:id="@+id/custom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:hint="@string/random_custom_hint"
+            android:importantForAutofill="no"
+            android:inputType="number"
+            android:maxLength="4"
+            android:visibility="gone" />
+
+        <TextView
+            style="@style/IndexSectionHeader"
+            android:text="@string/random_type" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView android:id="@+id/type_both" style="@style/IndexChip" android:text="@string/random_type_both" />
+                <TextView android:id="@+id/type_photos" style="@style/IndexChip" android:text="@string/random_type_photos" />
+                <TextView android:id="@+id/type_videos" style="@style/IndexChip" android:text="@string/random_type_videos" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/subfolders"
+            style="@style/IndexRow"
+            android:layout_marginTop="12dp"
+            android:text="@string/random_subfolders" />
+
+        <TextView
+            android:id="@+id/note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/random_defaults_note"
+            android:textAppearance="@style/TextAppearance.Index.Secondary" />
+    </LinearLayout>
+</ScrollView>

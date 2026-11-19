@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Item selecionado (modo de seleção): véu na cor de destaque por cima da célula.
+     Com teclado/mouse (fase 12), o item focado ganha só o contorno. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_activated="true">
+        <shape>
+            <solid android:color="@color/selection" />
+            <stroke android:width="2dp" android:color="@color/accent" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape>
+            <stroke android:width="2dp" android:color="@color/accent" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <HorizontalScrollView
+        android:id="@+id/crumbs_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/crumbs"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp" />
+    </HorizontalScrollView>
+
+    <include layout="@layout/random_bar" />
+
+    <include layout="@layout/preload_bar" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="2dp"
+            android:paddingBottom="16dp"
+            android:scrollbars="none" />
+
+        <app.index.files.ui.FastScroller
+            android:id="@+id/fast_scroller"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingVertical="8dp" />
+
+        <!-- "Puxar para atualizar" e aviso de "atualizando" (PullRefresh). -->
+        <FrameLayout
+            android:id="@+id/pull"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="top|center_horizontal"
+            android:background="@drawable/pull_bg"
+            android:contentDescription="@string/refreshing"
+            android:elevation="4dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/pull_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_refresh"
+                android:tint="?attr/idxAccent" />
+
+            <ProgressBar
+                android:id="@+id/pull_spinner"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:indeterminateTint="?attr/idxAccent"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textAppearance="@style/TextAppearance.Index.Secondary" />
+
+            <Button
+                android:id="@+id/empty_action"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/readd"
+                android:visibility="gone" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Itens copiados/recortados esperando um destino (vale em qualquer pasta). -->
+    <LinearLayout
+        android:id="@+id/paste_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/tileBackground"
+        android:gravity="center_vertical"
+        android:minHeight="56dp"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/paste_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="2"
+            android:textAppearance="@style/TextAppearance.Index.Body" />
+
+        <Button
+            android:id="@+id/paste_cancel"
+            style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cancel" />
+
+        <Button
+            android:id="@+id/paste_here"
+            style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/paste_here" />
+    </LinearLayout>
+</LinearLayout>

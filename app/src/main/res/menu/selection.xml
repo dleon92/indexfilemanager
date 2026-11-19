@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modo de seleção do navegador (toque longo num item). -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Um arquivo só: escolher o app (fase 12). -->
+    <item
+        android:id="@+id/sel_open_with"
+        android:icon="@drawable/ic_open_with"
+        android:title="@string/open_with"
+        app:showAsAction="always" />
+
+    <!-- Um ou vários arquivos (pastas não). -->
+    <item
+        android:id="@+id/sel_share"
+        android:icon="@drawable/ic_share"
+        android:title="@string/share"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/sel_rename"
+        android:icon="@drawable/ic_edit"
+        android:title="@string/rename_item"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/sel_copy"
+        android:icon="@drawable/ic_copy"
+        android:title="@string/copy"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/sel_move"
+        android:icon="@drawable/ic_cut"
+        android:title="@string/move"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/sel_delete"
+        android:icon="@drawable/ic_delete"
+        android:title="@string/delete"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/sel_all"
+        android:icon="@drawable/ic_select_all"
+        android:title="@string/select_all"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/sel_protect"
+        android:title="@string/vault_protect"
+        app:showAsAction="never" />
+</menu>
