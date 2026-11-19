@@ -340,7 +340,7 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   nome do autor tirado do Sobre e do README.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
-- Login do Drive: o projeto do Google Cloud está em "Em teste"; confirmar se o login já expirou
-  alguma vez. Se sim, ver publicação ou verificação do app.
-- Git no projeto (histórico, desfazer, levar correções ao fork PhotoDex); snapshots em dist/ seguem.
+- Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,
+  mudar o projeto para "Em produção" sem verificação.
+- Git: feito em 19/11/2026 (github.com/dleon92/indexfilemanager, público); snapshots em dist/ seguem.
 - Recentes do Drive: pasta virtual com os arquivos novos da nuvem, com os mesmos filtros.
