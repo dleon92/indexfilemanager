@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.17.0 (`dist/index-v0.17.0-fase13.apk`, player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.18.0 (`dist/index-v0.18.0-fase13.apk`, digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -669,13 +669,30 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   libVLC, de 3 a 30 MB) e GIF (o visualizador mostraria parado; também sai da sequência de fotos).
 - Pausa ao sair da tela, ao bloquear e ao desconectar o fone. Chave "Abrir vídeos no player do
   Index" (ligada). Vídeos da pesquisa também abrem no player.
-- APK: +525 KB (1.047 KB para 1.572 KB). Testado no S23.## Dependências
+- APK: +525 KB (1.047 KB para 1.572 KB). Testado no S23.
+
+## Digitalizar documentos (v0.18.0)
+
+- Menu da pasta, "Digitalizar documento": abre o scanner do Google Play services (ML Kit,
+  modo completo): bordas e corte automáticos, filtros, limpeza de sombras e manchas, flash, várias
+  páginas e importar da galeria. A câmera é dele: o Index não pede permissão de câmera.
+- Ao voltar, pergunta como salvar (lembra a escolha): PDF com todas as páginas, imagens JPG (uma
+  por página) ou os dois, na pasta aberta (do aparelho ou do Drive), com nomes
+  "Digitalização AAAA-MM-DD HH.MM.SS" (" - página N" nas imagens). Usa `FileOps.upload` com nomes.
+- R8: regra para manter os `ComponentRegistrar` (criados por reflexão a partir do manifesto); sem
+  ela o scanner caía com NullPointerException ao abrir.
+- O flash é da tela do Google: liga/desliga, sem intensidade. Ajuste de intensidade exigiria tela de
+  câmera própria (Camera2, `FLASH_STRENGTH_LEVEL`, Android 15+).
+- APK: +107 KB (1.572 KB para 1.679 KB). Testado no S23.
+
+## Dependências
 
 | Dependência | Motivo |
 |---|---|
 | `androidx.appcompat:appcompat` 1.7.1 | Tema DayNight e `AppCompatDelegate.setDefaultNightMode` em API 26+. Traz `fragment`, `activity` e `core` transitivamente (Activity única com Fragments, seletor SAF via Activity Result). |
 | `androidx.recyclerview:recyclerview` 1.4.0 | Grade/lista com reciclagem de views e `DiffUtil` (exigidos pela especificação). |
 | `com.google.android.gms:play-services-auth` 22.0.0 | OAuth do Drive (`AuthorizationClient`). +142 KB no APK após R8. |
+| `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
 Nenhuma outra. Kotlin vem embutido no AGP 9.
@@ -723,3 +740,4 @@ Nenhuma outra. Kotlin vem embutido no AGP 9.
 | v0.15.0-fase13 (Recentes do Drive, Recentes adicionadas, posição da lista) | 1.045.357 bytes (1.021 KB) | — |
 | v0.16.0-fase13 (Salvar no Index pelo compartilhar) | 1.046.909 bytes (1.022 KB) | — |
 | v0.17.0-fase13 (player de vídeo com Media3) | 1.572.249 bytes (1.535 KB) | — |
+| v0.18.0-fase13 (digitalizar documentos) | 1.679.353 bytes (1.640 KB) | — |

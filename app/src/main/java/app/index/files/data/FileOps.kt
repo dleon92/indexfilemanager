@@ -162,8 +162,11 @@ class FileOps(ctx: Context, private val listener: Listener) {
         }
     }
 
-    /** "Enviar arquivos": copia Uris escolhidas no seletor do sistema para [to]. */
-    fun upload(to: Loc, uris: List<Uri>): Result = op {
+    /**
+     * "Enviar arquivos": copia Uris escolhidas no seletor do sistema para [to]. [named]: nome e
+     * tipo de cada Uri, quando quem chama já sabe (ex.: páginas digitalizadas, que vêm sem nome).
+     */
+    fun upload(to: Loc, uris: List<Uri>, named: List<Pair<String, String>>? = null): Result = op {
         val cr = app.contentResolver
         val names = existing(to)
         try {
@@ -178,7 +181,12 @@ class FileOps(ctx: Context, private val listener: Listener) {
                             if (!c.isNull(1)) size = c.getLong(1)
                         }
                     }
-                    val mime = cr.getType(uri) ?: "application/octet-stream"
+                    var mime = cr.getType(uri) ?: "application/octet-stream"
+                    named?.getOrNull(i)?.let { (n, m) ->
+                        name = n
+                        mime = m
+                    }
+                    if (size < 0 && uri.scheme == "file") uri.path?.let { size = java.io.File(it).length() }
                     listener.onProgress(name, i, uris.size, 0, size)
                     val unique = uniqueName(names, name)
                     names.add(key(unique))

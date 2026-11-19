@@ -350,6 +350,9 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   Dois toques avançam/voltam (10 s, configurável), segurar = 2x, linha do tempo com ajuste fino
   pela altura do dedo, trilhas de áudio e legenda (embutidas e externas). WMV/ASF e GIF abrem em
   outro app. Testado no S23.
+- Extra pós-entrega (v0.18.0): digitalizar documentos com o scanner do Google (ML Kit; decisão do
+  usuário): corte, filtros, sombra, flash, várias páginas; salva como PDF, JPG ou os dois na pasta.
+  O flash do scanner não tem intensidade (tela do Google). Testado no S23.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

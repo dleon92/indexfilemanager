@@ -87,6 +87,11 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_scan"
+        android:title="@string/scan_document"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_select"
         android:title="@string/select"
         app:showAsAction="never" />

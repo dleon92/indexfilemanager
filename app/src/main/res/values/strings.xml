@@ -115,6 +115,14 @@
     <string name="default_sort">Ordenação padrão</string>
     <string name="show_hidden">Mostrar arquivos ocultos</string>
     <string name="internal_viewer">Abrir fotos no visualizador do Index</string>
+    <string name="scan_document">Digitalizar documento</string>
+    <string name="scan_unavailable">O digitalizador do Google não está disponível neste aparelho (precisa do Google Play services).</string>
+    <string name="scan_save_title">Salvar digitalização</string>
+    <string name="scan_as_pdf">PDF (todas as páginas num arquivo)</string>
+    <string name="scan_as_images">Imagens JPG (uma por página)</string>
+    <string name="scan_as_both">PDF e imagens</string>
+    <string name="scan_name">Digitalização %1$s</string>
+    <string name="scan_page">página %1$d</string>
     <string name="internal_player">Abrir vídeos no player do Index</string>
     <string name="seek_forward_title">Dois toques à direita avançam</string>
     <string name="seek_back_title">Dois toques à esquerda voltam</string>

@@ -112,6 +112,11 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         get() = sp.getBoolean("internal_viewer", true)
         set(v) = sp.edit().putBoolean("internal_viewer", v).apply()
 
+    /** Como salvar a digitalização: 0 = PDF, 1 = imagens JPG, 2 = os dois. */
+    var scanFormat: Int
+        get() = sp.getInt("scan_format", 0)
+        set(v) = sp.edit().putInt("scan_format", v).apply()
+
     /** Vídeos no player do app (falso: app externo, como antes). */
     var internalPlayer: Boolean
         get() = sp.getBoolean("internal_player", true)
