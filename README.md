@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.15.0 (`dist/index-v0.15.0-fase13.apk`, Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.16.0 (`dist/index-v0.16.0-fase13.apk`, "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -636,6 +636,17 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   continua onde estava (e as pastas de cima também).
 - Testado no S23.
 
+## Salvar no Index (v0.16.0)
+
+- O Index aparece no menu de compartilhar do Android como **Salvar no Index**, para um ou vários
+  arquivos de qualquer tipo (SEND/SEND_MULTIPLE na `MainActivity`).
+- Abre a lista de pastas (com o bloqueio do app, se ligado); em qualquer pasta do aparelho ou do
+  Drive aparece a barra "N arquivos para salvar" com **Salvar aqui** e **Cancelar** (a mesma barra
+  do colar). Salvar usa a cópia de "Enviar arquivos" (`FileOps.upload`): nomes repetidos ganham
+  outro nome, nada é sobrescrito. Ao terminar, volta para o app que compartilhou; com erro, mostra o
+  motivo e deixa escolher outra pasta. Cancelar ou voltar também retorna ao app de origem.
+- Recentes não recebe arquivos (a barra não aparece). Compartilhamento só de texto: avisa e fecha.
+- Testado no S23.
 ## Dependências
 
 | Dependência | Motivo |
@@ -687,3 +698,4 @@ Nenhuma outra. Kotlin vem embutido no AGP 9.
 | v0.14.2-fase13 (abrir de outros apps, .doc formatado) | 1.042.265 bytes (1.018 KB) | — |
 | v0.14.3-fase13 (sem nome do autor no Sobre) | 1.042.165 bytes (1.018 KB) | — |
 | v0.15.0-fase13 (Recentes do Drive, Recentes adicionadas, posição da lista) | 1.045.357 bytes (1.021 KB) | — |
+| v0.16.0-fase13 (Salvar no Index pelo compartilhar) | 1.046.909 bytes (1.022 KB) | — |

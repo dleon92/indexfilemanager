@@ -74,6 +74,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- "Salvar no Index" no menu de compartilhar: escolhe uma pasta (do aparelho ou do
+                 Drive) e salva ali os arquivos recebidos. -->
+            <intent-filter android:label="@string/share_save_label">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
         </activity>
 
         <!-- Leitor de documentos para outros apps ("Abrir com" → Index). Só os formatos que o

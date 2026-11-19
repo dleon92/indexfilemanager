@@ -343,6 +343,9 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   Adicionar pasta e removidas em Gerenciar pastas (saiu a chave "Mostrar a pasta Recentes").
   A lista guarda a posição ao voltar de uma imagem, de outro app ou do processo recriado.
   Testado no S23.
+- Extra pós-entrega (v0.16.0): "Salvar no Index" no menu de compartilhar do Android. Abre o
+  Index, o usuário escolhe uma pasta (do aparelho ou do Drive) e toca em Salvar aqui; depois volta
+  ao app de origem. Testado no S23.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

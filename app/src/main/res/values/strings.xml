@@ -284,6 +284,19 @@
     <string name="new_folder">Nova pasta</string>
     <string name="upload_files">Enviar arquivos para cá</string>
     <string name="paste_here">Colar aqui</string>
+    <string name="share_save_label">Salvar no Index</string>
+    <string name="share_save_here">Salvar aqui</string>
+    <string name="share_pick_folder">Escolha a pasta e toque em Salvar aqui</string>
+    <string name="share_nothing">Nada para salvar: o app não enviou um arquivo.</string>
+    <string name="op_saving">Salvando…</string>
+    <plurals name="share_count">
+        <item quantity="one">%d arquivo para salvar</item>
+        <item quantity="other">%d arquivos para salvar</item>
+    </plurals>
+    <plurals name="share_saved">
+        <item quantity="one">%d arquivo salvo</item>
+        <item quantity="other">%d arquivos salvos</item>
+    </plurals>
     <string name="name_hint">Nome</string>
     <string name="name_invalid">Nome inválido. Não use / \\ : * ? \" &lt; &gt; |</string>
     <plurals name="selected_count">

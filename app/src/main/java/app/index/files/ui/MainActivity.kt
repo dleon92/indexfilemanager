@@ -35,6 +35,7 @@ import app.index.files.Bg
 import app.index.files.R
 import app.index.files.data.Indexer
 import app.index.files.data.Prefs
+import app.index.files.data.FileOps
 import app.index.files.data.Roots
 import app.index.files.data.drive.DriveAuth
 import app.index.files.security.AppLock
@@ -102,7 +103,8 @@ class MainActivity : AppCompatActivity() {
     /** Com o app bloqueado, "voltar" sai do app (não navega no conteúdo escondido). */
     private val lockBack = object : OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
-            moveTaskToBack(true)
+            // Aberto pelo "Salvar no Index": a tarefa é do outro app, então só fecha esta tela.
+            if (saving) shareCancelled() else moveTaskToBack(true)
         }
     }
 
@@ -120,6 +122,12 @@ class MainActivity : AppCompatActivity() {
         applyInsets(toolbar)
         updatePanes()
         replaceRootId = savedInstanceState?.getLong(S_REPLACE, -1L) ?: -1L
+        if (savedInstanceState == null) {
+            if (!readShare(intent)) return
+        } else {
+            @Suppress("DEPRECATION")
+            savedInstanceState.getParcelableArrayList<Uri>(S_INCOMING)?.let { incoming = it }
+        }
 
         val fm = supportFragmentManager
         val locked = AppLock.needsUnlock(this)
@@ -138,6 +146,51 @@ class MainActivity : AppCompatActivity() {
         if (locked) showLock()
         // Indexação incremental ao abrir o app, depois do primeiro frame (não pesa na abertura).
         if (savedInstanceState == null) Bg.main.postDelayed({ Indexer.start(applicationContext) }, 1500)
+    }
+
+    // ---- "Salvar no Index" (menu de compartilhar) ----
+
+    /** Arquivos recebidos de outro app esperando a pasta de destino (vazio = uso normal). */
+    var incoming: List<Uri> = emptyList()
+        private set
+
+    val saving get() = incoming.isNotEmpty()
+
+    /**
+     * Lê um compartilhamento (SEND/SEND_MULTIPLE). Sem arquivo (só texto), avisa e fecha.
+     * Devolve false se a tela foi fechada.
+     */
+    private fun readShare(i: Intent?): Boolean {
+        val action = i?.action
+        if (action != Intent.ACTION_SEND && action != Intent.ACTION_SEND_MULTIPLE) return true
+        @Suppress("DEPRECATION")
+        val uris: List<Uri> = if (action == Intent.ACTION_SEND) {
+            listOfNotNull(i.getParcelableExtra(Intent.EXTRA_STREAM))
+        } else {
+            i.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM).orEmpty()
+        }
+        if (uris.isEmpty()) {
+            Toast.makeText(this, R.string.share_nothing, Toast.LENGTH_LONG).show()
+            finish()
+            return false
+        }
+        incoming = uris
+        Toast.makeText(this, R.string.share_pick_folder, Toast.LENGTH_LONG).show()
+        return true
+    }
+
+    /** Salvou na pasta escolhida: avisa e volta para o app que compartilhou. */
+    fun shareSaved(res: FileOps.Result) {
+        if (res.cancelled || res.failed > 0) return // o relatório já apareceu; dá para tentar outra pasta
+        Toast.makeText(applicationContext, resources.getQuantityString(R.plurals.share_saved, res.done, res.done), Toast.LENGTH_SHORT).show()
+        incoming = emptyList()
+        finish()
+    }
+
+    /** Desistiu de salvar: volta para o app que compartilhou. */
+    fun shareCancelled() {
+        incoming = emptyList()
+        finish()
     }
 
     /** Raio na barra: aparece/some com a pré-carga de miniaturas. */
@@ -534,6 +587,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putLong(S_REPLACE, replaceRootId)
+        if (saving) outState.putParcelableArrayList(S_INCOMING, ArrayList(incoming))
     }
 
     private fun syncToolbar() {
@@ -835,6 +889,7 @@ class MainActivity : AppCompatActivity() {
         const val ROOTS_CHANGED = "roots_changed"
         const val VAULT_STACK = "vault"
         private const val S_REPLACE = "replace_root"
+        private const val S_INCOMING = "incoming"
         private const val TWO_PANE_DP = 840
     }
 }

@@ -220,10 +220,17 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         pasteBar = view.findViewById(R.id.paste_bar)
         pasteText = view.findViewById(R.id.paste_text)
         view.findViewById<View>(R.id.paste_cancel).setOnClickListener {
+            val main = activity as MainActivity
+            if (main.saving) {
+                main.shareCancelled()
+                return@setOnClickListener
+            }
             Clip.clear()
             updatePasteBar()
         }
-        view.findViewById<View>(R.id.paste_here).setOnClickListener { paste() }
+        view.findViewById<View>(R.id.paste_here).setOnClickListener {
+            if ((activity as MainActivity).saving) saveShared() else paste()
+        }
         adapter.grid = prefs.viewGrid
         lm = GridLayoutManager(ctx, 1)
         list.layoutManager = lm
@@ -1065,14 +1072,38 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
     }
 
     private fun updatePasteBar() {
+        val main = activity as? MainActivity ?: return
+        val here = pasteBar.findViewById<android.widget.Button>(R.id.paste_here)
         // Recentes não recebe arquivos (é uma lista do aparelho todo): a barra espera outra pasta.
-        if (!Clip.active || root?.isRecent == true) {
+        if ((!Clip.active && !main.saving) || root?.isRecent == true) {
             pasteBar.visibility = View.GONE
             return
         }
-        val n = Clip.items.size
-        pasteText.text = resources.getQuantityString(if (Clip.move) R.plurals.clip_move else R.plurals.clip_copy, n, n)
+        if (main.saving) {
+            val n = main.incoming.size
+            pasteText.text = resources.getQuantityString(R.plurals.share_count, n, n)
+            here.setText(R.string.share_save_here)
+        } else {
+            val n = Clip.items.size
+            pasteText.text = resources.getQuantityString(if (Clip.move) R.plurals.clip_move else R.plurals.clip_copy, n, n)
+            here.setText(R.string.paste_here)
+        }
         pasteBar.visibility = View.VISIBLE
+    }
+
+    /** "Salvar no Index": copia os arquivos recebidos para esta pasta e volta ao app de origem. */
+    private fun saveShared() = withWrite {
+        val main = activity as? MainActivity ?: return@withWrite
+        val at = here() ?: return@withWrite
+        val uris = main.incoming
+        endSelection()
+        OpRunner.run(main, R.string.op_saving, { it.upload(at, uris) }) { res ->
+            if (view != null) {
+                load(lm.onSaveInstanceState())
+                updatePasteBar()
+            }
+            main.shareSaved(res)
+        }
     }
 
 
