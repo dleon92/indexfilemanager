@@ -101,11 +101,13 @@ class ManageFoldersFragment : Fragment(R.layout.fragment_list) {
         if (r.isRecent) {
             // Pasta virtual: só liberar o acesso (se faltar) e remover da lista.
             if (!r.available) pm.menu.add(0, 2, 0, if (r.isDrive) R.string.drive_connect else R.string.readd)
-            pm.menu.add(0, 3, 1, R.string.remove)
+            pm.menu.add(0, 7, 1, R.string.shortcut_add_home)
+            pm.menu.add(0, 3, 2, R.string.remove)
             pm.setOnMenuItemClickListener {
                 when (it.itemId) {
                     2 -> if (r.isDrive) main().connectDrive() else main().readd(r)
                     3 -> confirmRemove(r)
+                    7 -> FolderShortcut.pin(requireContext(), r)
                 }
                 true
             }
@@ -116,14 +118,16 @@ class ManageFoldersFragment : Fragment(R.layout.fragment_list) {
         if (!r.available) pm.menu.add(0, 2, 1, if (r.isDrive) R.string.drive_connect else R.string.readd)
         if (r.available) pm.menu.add(0, 5, 2, R.string.reindex)
         pm.menu.add(0, 4, 3, R.string.clear_folder_thumbs)
-        pm.menu.add(0, 6, 4, R.string.vault_protect)
-        pm.menu.add(0, 3, 5, R.string.remove)
+        pm.menu.add(0, 7, 4, R.string.shortcut_add_home)
+        pm.menu.add(0, 6, 5, R.string.vault_protect)
+        pm.menu.add(0, 3, 6, R.string.remove)
         pm.setOnMenuItemClickListener {
             when (it.itemId) {
                 1 -> rename(r)
                 2 -> if (r.isDrive) main().connectDrive() else main().readd(r)
                 3 -> confirmRemove(r)
                 4 -> clearThumbs(r)
+                7 -> FolderShortcut.pin(requireContext(), r)
                 6 -> main().vaultUi.protect(r, listOf(r.docId), listOf(r.alias)) {
                     if (view != null) load()
                     parentFragmentManager.setFragmentResult(MainActivity.ROOTS_CHANGED, Bundle.EMPTY)
@@ -177,7 +181,10 @@ class ManageFoldersFragment : Fragment(R.layout.fragment_list) {
             .setMessage(getString(R.string.remove_confirm, r.alias))
             .setPositiveButton(R.string.remove) { _, _ ->
                 val app = ctx.applicationContext
-                Bg.run({ Roots.remove(app, r.id) }) { if (view != null) load() }
+                Bg.run({ Roots.remove(app, r.id) }) {
+                    if (!r.isRecent) FolderShortcut.removed(app, r.id)
+                    if (view != null) load()
+                }
             }
             .setNegativeButton(R.string.cancel, null)
             .show()

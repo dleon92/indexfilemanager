@@ -22,6 +22,10 @@
         android:title="@string/protected_folders"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_web"
+        android:title="@string/shortcut_web_long"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_settings"
         android:orderInCategory="1000"
         android:title="@string/settings"

@@ -33,8 +33,6 @@ import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import app.index.files.Bg
 import app.index.files.R
-import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
-import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import app.index.files.data.AppDb
 import app.index.files.data.FileItem
@@ -123,8 +121,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
 
     /** Volta do digitalizador do Google com as páginas (JPEG) e o PDF. */
     private val scanLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
-        if (res.resultCode != android.app.Activity.RESULT_OK) return@registerForActivityResult
-        val r = GmsDocumentScanningResult.fromActivityResultIntent(res.data) ?: return@registerForActivityResult
+        val r = Scan.result(res.resultCode, res.data) ?: return@registerForActivityResult
         onScanned(r)
     }
 
@@ -233,6 +230,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             val main = activity as MainActivity
             if (main.saving) {
                 main.shareCancelled()
+                updatePasteBar()
                 return@setOnClickListener
             }
             Clip.clear()
@@ -757,7 +755,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             // Na seleção sorteada não há edição (os itens podem vir de subpastas).
             // Recentes é uma lista virtual: nada entra nela, e ela não está no índice (busca, sorteio, pré-carga).
             val recent = root?.isRecent == true
-            for (id in intArrayOf(R.id.action_new_folder, R.id.action_upload, R.id.action_scan)) {
+            for (id in intArrayOf(R.id.action_add_menu, R.id.action_new_folder, R.id.action_upload, R.id.action_scan)) {
                 menu.findItem(id)?.isVisible = !randomActive && !recent
             }
             for (id in intArrayOf(R.id.action_search, R.id.action_random, R.id.action_preload)) {
@@ -789,10 +787,6 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             }
             menu.findItem(R.id.action_set_start)?.isVisible = vault == null && !randomActive
             val grid = adapter.grid
-            menu.findItem(R.id.action_view_mode).apply {
-                setIcon(if (grid) R.drawable.ic_view_list else R.drawable.ic_view_grid)
-                setTitle(if (grid) R.string.view_list else R.string.view_grid)
-            }
             menu.findItem(R.id.action_bigger).isVisible = true // da lista, volta à grade
             menu.findItem(R.id.action_smaller).isVisible = grid
             val s = spec ?: defaultSpec()
@@ -827,12 +821,6 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
                 R.id.sel_protect -> protectSelected()
                 R.id.action_search -> openSearch()
                 R.id.action_set_start -> setAsStart()
-                R.id.action_view_mode -> {
-                    adapter.grid = !adapter.grid
-                    prefs.viewGrid = adapter.grid
-                    zoom.apply()
-                    requireActivity().invalidateOptionsMenu()
-                }
                 R.id.sort_name -> setSpec(cur.copy(by = SortSpec.NAME))
                 R.id.sort_size -> setSpec(cur.copy(by = SortSpec.SIZE))
                 R.id.sort_type -> setSpec(cur.copy(by = SortSpec.TYPE))
@@ -1072,65 +1060,17 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
 
     // ---- Digitalizar documento (scanner do Google Play services) ----
 
-    /**
-     * Abre o digitalizador do Google: detecta as bordas e corta, filtros (inclusive tirar sombra),
-     * flash, várias páginas, importar da galeria. Ele mesmo usa a câmera: o Index não pede permissão.
-     */
     private fun startScan() = withWrite {
         val act = activity ?: return@withWrite
-        val opts = GmsDocumentScannerOptions.Builder()
-            .setGalleryImportAllowed(true)
-            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
-            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG, GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
-            .build()
-        GmsDocumentScanning.getClient(opts).getStartScanIntent(act)
-            .addOnSuccessListener { sender ->
-                if (view == null) return@addOnSuccessListener
-                AppLock.beginOwnFlow()
-                scanLauncher.launch(androidx.activity.result.IntentSenderRequest.Builder(sender).build())
-            }
-            .addOnFailureListener { e ->
-                Log.w(TAG, "digitalizador indisponível", e)
-                context?.let { Toast.makeText(it, R.string.scan_unavailable, Toast.LENGTH_LONG).show() }
-            }
+        Scan.start(act, scanLauncher)
     }
 
-    /** Pergunta o formato (lembra a última escolha) e salva nesta pasta. */
+    /** Pergunta o formato e salva nesta pasta. */
     private fun onScanned(r: GmsDocumentScanningResult) {
-        val pages = r.pages.orEmpty().map { it.imageUri }
-        val pdf = r.pdf?.uri
-        if (pages.isEmpty() && pdf == null) return
-        val labels = arrayOf(getString(R.string.scan_as_pdf), getString(R.string.scan_as_images), getString(R.string.scan_as_both))
-        var choice = prefs.scanFormat.coerceIn(0, 2)
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.scan_save_title)
-            .setSingleChoiceItems(labels, choice) { _, which -> choice = which }
-            .setPositiveButton(R.string.save) { _, _ ->
-                prefs.scanFormat = choice
-                saveScan(pages, pdf, choice)
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun saveScan(pages: List<android.net.Uri>, pdf: android.net.Uri?, format: Int) {
-        val at = here() ?: return
-        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH.mm.ss", java.util.Locale.US).format(java.util.Date())
-        val base = getString(R.string.scan_name, stamp)
-        val uris = ArrayList<android.net.Uri>()
-        val named = ArrayList<Pair<String, String>>()
-        if (format != 1 && pdf != null) {
-            uris.add(pdf)
-            named.add("$base.pdf" to "application/pdf")
+        Scan.askFormat(requireContext(), r) { uris, named ->
+            val at = here() ?: return@askFormat
+            runOp(R.string.op_saving) { it.upload(at, uris, named) }
         }
-        if (format != 0 || pdf == null) {
-            pages.forEachIndexed { i, u ->
-                uris.add(u)
-                val suffix = if (pages.size > 1) " - " + getString(R.string.scan_page, i + 1) else ""
-                named.add("$base$suffix.jpg" to "image/jpeg")
-            }
-        }
-        runOp(R.string.op_saving) { it.upload(at, uris, named) }
     }
 
     private fun upload(uris: List<android.net.Uri>) {
@@ -1147,6 +1087,10 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             endSelection()
             if (view != null) load(lm.onSaveInstanceState())
         }
+    }
+
+    fun refreshPasteBar() {
+        if (view != null) updatePasteBar()
     }
 
     private fun updatePasteBar() {
@@ -1174,13 +1118,14 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         val main = activity as? MainActivity ?: return@withWrite
         val at = here() ?: return@withWrite
         val uris = main.incoming
+        val named = main.incomingNames
         endSelection()
-        OpRunner.run(main, R.string.op_saving, { it.upload(at, uris) }) { res ->
+        OpRunner.run(main, R.string.op_saving, { it.upload(at, uris, named) }) { res ->
+            main.shareSaved(res)
             if (view != null) {
                 load(lm.onSaveInstanceState())
                 updatePasteBar()
             }
-            main.shareSaved(res)
         }
     }
 

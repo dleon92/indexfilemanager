@@ -31,6 +31,16 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         get() = sp.getInt("schedule_end", 7 * 60)
         set(v) = sp.edit().putInt("schedule_end", v).apply()
 
+    /** Senha do acesso pelo computador (JSON do PasswordRec: só salt e hash). */
+    var webPassword: String?
+        get() = sp.getString("web_password", null)
+        set(v) = sp.edit().putString("web_password", v).apply()
+
+    /** Porta preferida do acesso pelo computador (se ocupada, tenta as seguintes). */
+    var webPort: Int
+        get() = sp.getInt("web_port", 8080)
+        set(v) = sp.edit().putInt("web_port", v).apply()
+
     var viewGrid: Boolean
         get() = sp.getBoolean("view_grid", true)
         set(v) = sp.edit().putBoolean("view_grid", v).apply()

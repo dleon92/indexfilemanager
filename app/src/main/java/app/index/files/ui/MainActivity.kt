@@ -108,6 +108,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Atalho do ícone a abrir assim que a lista de pastas aparecer (depois do desbloqueio). */
+    private var pendingShortcut: String? = null
+    private var shortcutRoot = 0L
+
+    private val scanLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
+        val r = Scan.result(res.resultCode, res.data) ?: return@registerForActivityResult
+        Scan.askFormat(this, r) { uris, named ->
+            incoming = uris
+            incomingNames = named
+            scanning = true
+            Toast.makeText(this, R.string.scan_pick_folder, Toast.LENGTH_LONG).show()
+            (supportFragmentManager.findFragmentById(R.id.content) as? BrowserFragment)?.refreshPasteBar()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Precisa vir antes de super.onCreate para não haver troca visível de tema.
         appliedTheme = Themes.current(this).id
@@ -124,9 +139,15 @@ class MainActivity : AppCompatActivity() {
         replaceRootId = savedInstanceState?.getLong(S_REPLACE, -1L) ?: -1L
         if (savedInstanceState == null) {
             if (!readShare(intent)) return
+            pendingShortcut = intent?.action?.takeIf { it == ACTION_RECENT || it == ACTION_SCAN || it == ACTION_WEB || it == FolderShortcut.ACTION_OPEN_ROOT }
+            shortcutRoot = intent?.getLongExtra(FolderShortcut.EXTRA_ROOT, 0L) ?: 0L
         } else {
             @Suppress("DEPRECATION")
             savedInstanceState.getParcelableArrayList<Uri>(S_INCOMING)?.let { incoming = it }
+            val n = savedInstanceState.getStringArrayList(S_NAMES)
+            val t = savedInstanceState.getStringArrayList(S_TYPES)
+            if (n != null && t != null && n.size == incoming.size) incomingNames = n.zip(t)
+            scanning = savedInstanceState.getBoolean(S_SCANNING)
         }
 
         val fm = supportFragmentManager
@@ -137,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                 homePending = true
             } else {
                 fm.beginTransaction().replace(R.id.content, HomeFragment()).commit()
-                openStartFolder()
+                openStartOrShortcut()
             }
         }
         fm.addOnBackStackChangedListener { syncToolbar() }
@@ -154,7 +175,68 @@ class MainActivity : AppCompatActivity() {
     var incoming: List<Uri> = emptyList()
         private set
 
+    /** Nome e tipo de cada arquivo recebido (digitalização); null = o nome que o arquivo já tem. */
+    var incomingNames: List<Pair<String, String>>? = null
+        private set
+
+    /** Os recebidos vêm do scanner (atalho do ícone): salvar ou desistir não fecha o app. */
+    private var scanning = false
+
     val saving get() = incoming.isNotEmpty()
+
+    /** Pasta inicial, ou o que o atalho do ícone pediu (Recentes / Digitalizar). */
+    private fun openStartOrShortcut() {
+        val sc = pendingShortcut
+        pendingShortcut = null
+        when (sc) {
+            ACTION_RECENT -> openRecentShortcut()
+            FolderShortcut.ACTION_OPEN_ROOT -> openRootShortcut(shortcutRoot)
+            ACTION_SCAN -> {
+                openStartFolder()
+                Scan.start(this, scanLauncher)
+            }
+            // Por cima da lista de pastas ("voltar" leva à lista).
+            ACTION_WEB -> push(WebFragment())
+            else -> openStartFolder()
+        }
+    }
+
+    /**
+     * Atalho de pasta na tela inicial: abre a pasta por cima da lista. Removida, protegida ou
+     * indisponível: fica na lista de pastas, com aviso.
+     */
+    private fun openRootShortcut(id: Long) {
+        if (id == Roots.RECENT_ID) return openRecentShortcut()
+        val app = applicationContext
+        Bg.run({
+            Roots.get(app, id)?.takeIf { r ->
+                (r.isRecent || Roots.checkAvailable(app, r)) && !Vault.isHiddenRoot(app, r)
+            }
+        }) { res ->
+            if (isFinishing || supportFragmentManager.isStateSaved) return@run
+            val r = res.getOrNull()
+            if (r == null) {
+                Toast.makeText(this, R.string.shortcut_folder_missing, Toast.LENGTH_LONG).show()
+                return@run
+            }
+            push(BrowserFragment.newInstance(r.id))
+        }
+    }
+
+    /** Atalho "Recentes": abre a pasta Recentes do aparelho, sem precisar estar na lista. */
+    private fun openRecentShortcut() {
+        if (Roots.hasAllFiles()) {
+            push(BrowserFragment.newInstance(Roots.RECENT_ID))
+            return
+        }
+        askAllFiles { granted ->
+            if (!granted) {
+                Toast.makeText(this, R.string.all_files_denied_recent, Toast.LENGTH_LONG).show()
+                return@askAllFiles
+            }
+            if (!isFinishing && !supportFragmentManager.isStateSaved) push(BrowserFragment.newInstance(Roots.RECENT_ID))
+        }
+    }
 
     /**
      * Lê um compartilhamento (SEND/SEND_MULTIPLE). Sem arquivo (só texto), avisa e fecha.
@@ -183,14 +265,22 @@ class MainActivity : AppCompatActivity() {
     fun shareSaved(res: FileOps.Result) {
         if (res.cancelled || res.failed > 0) return // o relatório já apareceu; dá para tentar outra pasta
         Toast.makeText(applicationContext, resources.getQuantityString(R.plurals.share_saved, res.done, res.done), Toast.LENGTH_SHORT).show()
-        incoming = emptyList()
-        finish()
+        val stay = scanning
+        clearIncoming()
+        if (!stay) finish()
     }
 
-    /** Desistiu de salvar: volta para o app que compartilhou. */
+    /** Desistiu de salvar: volta para o app que compartilhou (digitalização: só descarta). */
     fun shareCancelled() {
+        val stay = scanning
+        clearIncoming()
+        if (!stay) finish()
+    }
+
+    private fun clearIncoming() {
         incoming = emptyList()
-        finish()
+        incomingNames = null
+        scanning = false
     }
 
     /** Raio na barra: aparece/some com a pré-carga de miniaturas. */
@@ -457,7 +547,7 @@ class MainActivity : AppCompatActivity() {
         if (homePending && !supportFragmentManager.isStateSaved) {
             homePending = false
             supportFragmentManager.beginTransaction().replace(R.id.content, HomeFragment()).commit()
-            openStartFolder()
+            openStartOrShortcut()
         }
     }
 
@@ -590,6 +680,11 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putLong(S_REPLACE, replaceRootId)
         if (saving) outState.putParcelableArrayList(S_INCOMING, ArrayList(incoming))
+        incomingNames?.let { n ->
+            outState.putStringArrayList(S_NAMES, ArrayList(n.map { it.first }))
+            outState.putStringArrayList(S_TYPES, ArrayList(n.map { it.second }))
+        }
+        outState.putBoolean(S_SCANNING, scanning)
     }
 
     private fun syncToolbar() {
@@ -607,8 +702,9 @@ class MainActivity : AppCompatActivity() {
         val top = supportFragmentManager.backStackEntryCount == 0
         // Configurações em todas as telas (último item do menu ⋮), menos nela mesma.
         menu.findItem(R.id.action_settings).isVisible =
-            supportFragmentManager.findFragmentById(R.id.content) !is SettingsFragment
+            supportFragmentManager.findFragmentById(R.id.content).let { it !is SettingsFragment && it !is SettingsHomeFragment }
         menu.findItem(R.id.action_manage).isVisible = top
+        menu.findItem(R.id.action_web).isVisible = top
         // Id próprio: o navegador tem o seu "action_search" (com escopo da pasta atual).
         menu.findItem(R.id.action_search_all).isVisible = top
         // Indicador discreto da pré-carga (rodando ou com miniaturas extras na RAM).
@@ -617,8 +713,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.action_settings -> { push(SettingsFragment()); true }
+        R.id.action_settings -> { push(SettingsHomeFragment()); true }
         R.id.action_manage -> { push(ManageFoldersFragment()); true }
+        R.id.action_web -> { push(WebFragment()); true }
         R.id.action_search_all -> { push(SearchFragment.newInstance()); true }
         R.id.action_protected -> { openVaultList(); true }
         R.id.action_preload_status -> { PreloadUi.showStatus(this); true }
@@ -892,6 +989,12 @@ class MainActivity : AppCompatActivity() {
         const val VAULT_STACK = "vault"
         private const val S_REPLACE = "replace_root"
         private const val S_INCOMING = "incoming"
+        private const val S_NAMES = "incoming_names"
+        private const val S_TYPES = "incoming_types"
+        private const val S_SCANNING = "scanning"
+        const val ACTION_RECENT = "app.index.files.action.RECENT"
+        const val ACTION_SCAN = "app.index.files.action.SCAN"
+        const val ACTION_WEB = "app.index.files.action.WEB"
         private const val TWO_PANE_DP = 840
     }
 }

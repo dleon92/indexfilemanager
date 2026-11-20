@@ -44,12 +44,6 @@
     </item>
 
     <item
-        android:id="@+id/action_view_mode"
-        android:icon="@drawable/ic_view_list"
-        android:title="@string/view_list"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/action_sort"
         android:icon="@drawable/ic_sort"
         android:title="@string/sort"
@@ -71,30 +65,34 @@
         </menu>
     </item>
 
+    <!-- Criar ou trazer arquivos para esta pasta. -->
     <item
-        android:id="@+id/action_preload"
-        android:title="@string/preload_all"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_new_folder"
-        android:title="@string/new_folder"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_upload"
-        android:title="@string/upload_files"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_scan"
-        android:title="@string/scan_document"
-        app:showAsAction="never" />
+        android:id="@+id/action_add_menu"
+        android:title="@string/menu_add"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_new_folder"
+                android:title="@string/new_folder" />
+            <item
+                android:id="@+id/action_upload"
+                android:title="@string/upload_files" />
+            <item
+                android:id="@+id/action_scan"
+                android:title="@string/scan_document" />
+        </menu>
+    </item>
 
     <item
         android:id="@+id/action_select"
         android:title="@string/select"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_preload"
+        android:title="@string/preload_all"
+        app:showAsAction="never" />
+
 
     <item
         android:id="@+id/action_set_start"
@@ -103,12 +101,16 @@
 
     <!-- Tamanho da grade (também por pinça, Ctrl + roda do mouse e Ctrl +/−). -->
     <item
-        android:id="@+id/action_bigger"
-        android:title="@string/thumbs_bigger"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_smaller"
-        android:title="@string/thumbs_smaller"
-        app:showAsAction="never" />
+        android:id="@+id/action_size_menu"
+        android:title="@string/menu_thumb_size"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_bigger"
+                android:title="@string/thumbs_bigger" />
+            <item
+                android:id="@+id/action_smaller"
+                android:title="@string/thumbs_smaller" />
+        </menu>
+    </item>
 </menu>

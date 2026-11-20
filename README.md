@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.18.0 (`dist/index-v0.18.0-fase13.apk`, digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.20.0 (`dist/index-v0.20.0-fase13.apk`, IndexWeb: arquivos pelo navegador do computador; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -61,6 +61,9 @@ app/src/main/java/app/index/files/
 | `FOREGROUND_SERVICE` + `_MEDIA_PLAYBACK` | Mantém o streaming do Drive vivo enquanto o player (ou o app que recebeu um compartilhamento) lê. |
 | `FOREGROUND_SERVICE_DATA_SYNC` | Cópias/movimentações longas em segundo plano. |
 | `USE_BIOMETRIC` | Desbloqueio por digital/rosto. |
+| `WAKE_LOCK` | IndexWeb (v0.20.0): mantém CPU e Wi-Fi acordados com a tela apagada, só enquanto o acesso pelo computador estiver ligado. |
+| `ACCESS_LOCAL_NETWORK` | IndexWeb (v0.20.0): no Android 17, sem ela o sistema derruba as conexões da rede local (o PC não alcança o celular). Pedida ao ligar o IndexWeb. |
+| `CHANGE_WIFI_MULTICAST_STATE` | IndexWeb (v0.20.0): endereço fixo `index.local` (mDNS); o Wi-Fi só entrega multicast com a trava. Só com o IndexWeb ligado. |
 | `MANAGE_EXTERNAL_STORAGE` | "Acesso a todos os arquivos" (Android 11+), ativado pelo usuário: adicionar pastas que o seletor do sistema recusa (Download inteira, raiz do armazenamento, raiz do cartão). |
 
 Acesso amplo só se o usuário ativar: "Adicionar pasta local" (Android 11+) explica e abre a tela
@@ -685,6 +688,40 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   câmera própria (Camera2, `FLASH_STRENGTH_LEVEL`, Android 15+).
 - APK: +107 KB (1.572 KB para 1.679 KB). Testado no S23.
 
+## Atalhos no ícone e na tela inicial (v0.19.0)
+
+- Segurando o ícone do app: **Recentes**, **Digitalizar** e (v0.20.0) **IndexWeb**
+  (`res/xml/shortcuts.xml`, ações próprias tratadas no `onCreate` e depois do desbloqueio).
+  Digitalizar reaproveita o fluxo do "Salvar no Index": escolhe a pasta e volta.
+- Gerenciar pastas, menu de cada pasta: "Adicionar atalho à tela inicial" (atalho fixado,
+  `ShortcutManagerCompat.requestPinShortcut`); abre a pasta por cima da lista. Pasta removida do
+  Index: o atalho é desativado com aviso.
+- Saiu o botão de alternar grade/lista da barra: a troca é só pela pinça.
+
+## IndexWeb: acesso pelo computador (v0.20.0)
+
+- Menu ⋮ (ou atalho do ícone) → IndexWeb → Ligar. O navegador do PC, na mesma rede, abre
+  `http://index.local:8080` (nome fixo, mDNS próprio em `web/MdnsResponder.kt`) ou o endereço com
+  números. Só endereços de rede local aparecem (Wi-Fi, roteador do celular, cabo/USB; fora dados
+  móveis, VPN, Wi-Fi Direct).
+- Servidor HTTP/1.1 próprio (`web/WebServer.kt`, sem biblioteca): keep-alive, Range (vídeo com
+  avanço), zip em fluxo, envio por PUT com arquivo temporário. Página única em
+  `assets/web/index.html` (modelo 1 escolhido pelo usuário): árvore de pastas, volumes com uso,
+  bateria e aparelho, lista ou miniaturas (P/M/G, fotos com EXIF e vídeos), seleção múltipla,
+  baixar vários (.zip ou separados), enviar vários ou pasta inteira (3 ao mesmo tempo, arrastar e
+  soltar), nova pasta, renomear, mover, copiar, apagar, pesquisa e visualização.
+- Segurança: senha definida no app (PBKDF2; 5 erros = 5 min de espera), sessão por cookie
+  HttpOnly/SameSite=Strict, cabeçalho próprio em toda ação, Host só IP/localhost/index.local
+  (contra DNS rebinding), caminhos presos ao volume, pastas protegidas invisíveis e bloqueadas,
+  SVG/HTML nunca abertos inline. Sem criptografia: só redes de confiança (aviso na tela).
+- Serviço em primeiro plano (dataSync) com WifiLock e WakeLock; desliga após 30 min sem uso.
+- Android 17: a permissão de rede local é obrigatória (sem ela as conexões do PC expiravam).
+- Configurações reorganizadas em categorias (Aparência, Navegação e arquivos, Abrir e compartilhar,
+  Miniaturas, Google Drive, Segurança, IndexWeb, Dados e sobre); menu da pasta com submenus
+  "Adicionar" (nova pasta, enviar, digitalizar) e "Tamanho das miniaturas".
+- Compilação: cache de configuração e compilação paralela no `gradle.properties`.
+- Testado no S23 (página, nome index.local, Wi-Fi e roteador do celular).
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -695,7 +732,8 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra. Kotlin vem embutido no AGP 9.
+Nenhuma outra (v0.19.0 e v0.20.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
 
@@ -741,3 +779,5 @@ Nenhuma outra. Kotlin vem embutido no AGP 9.
 | v0.16.0-fase13 (Salvar no Index pelo compartilhar) | 1.046.909 bytes (1.022 KB) | — |
 | v0.17.0-fase13 (player de vídeo com Media3) | 1.572.249 bytes (1.535 KB) | — |
 | v0.18.0-fase13 (digitalizar documentos) | 1.679.353 bytes (1.640 KB) | — |
+| v0.19.0-fase13 (atalhos no ícone e de pastas; sem snapshot próprio, entregue com a v0.20.0) | 1.686.881 bytes (1.647 KB) | — |
+| v0.20.0-fase13 (IndexWeb, configurações em categorias) | 1.723.816 bytes (1.683 KB) | — |

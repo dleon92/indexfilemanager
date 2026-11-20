@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Configurações, do uso diário ao raro: Aparência · Navegação · Abrir e compartilhar ·
-     Seleção aleatória · Google Drive · Miniaturas · Pré-carga · Segurança · Dados do app.
-     O código liga cada linha pelo id: a ordem aqui é só visual. -->
+<!-- Todas as configurações, cada seção num bloco com tag "section_*". A tela inicial
+     (SettingsHomeFragment) agrupa as seções em categorias; cada categoria abre este mesmo
+     layout mostrando só os blocos dela. O código liga cada linha pelo id. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -14,8 +14,14 @@
         android:paddingBottom="24dp">
 
         <!-- ===== Aparência ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_appearance">
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_appearance" />
 
         <RadioGroup
@@ -65,11 +71,19 @@
             android:id="@+id/row_dark_theme"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Navegação ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_browsing">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_browsing" />
 
         <TextView
@@ -149,11 +163,19 @@
             android:id="@+id/row_seek_back"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Abrir e compartilhar ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_open_share">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_open_share" />
 
         <include
@@ -168,22 +190,38 @@
             android:id="@+id/row_share_apps"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Seleção aleatória ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_random">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_random" />
 
         <include
             android:id="@+id/row_random"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Google Drive ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_drive">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_drive" />
 
         <include
@@ -194,11 +232,19 @@
             android:id="@+id/row_drive_open"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Miniaturas ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_thumbs">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_thumbs" />
 
         <TextView
@@ -221,11 +267,19 @@
             android:id="@+id/row_thumb_clear"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Pré-carga ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_preload">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_preload" />
 
         <TextView
@@ -252,11 +306,19 @@
             android:id="@+id/row_release_idle"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Segurança ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_security">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_security" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -293,22 +355,38 @@
                 android:text="@string/lock_secure" />
         </LinearLayout>
 
+        </LinearLayout>
+
         <!-- ===== Dados do app (ação destrutiva, por último) ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_data">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_data" />
 
         <include
             android:id="@+id/row_reset"
             layout="@layout/row_setting" />
 
+        </LinearLayout>
+
         <!-- ===== Sobre ===== -->
-        <View style="@style/IndexDivider" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:tag="section_about">
+        <View android:tag="divider" style="@style/IndexDivider" />
 
         <TextView
             style="@style/IndexSectionHeader"
+            android:tag="header"
             android:text="@string/section_about" />
 
         <TextView
@@ -317,5 +395,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:textAppearance="@style/TextAppearance.Index.Body" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

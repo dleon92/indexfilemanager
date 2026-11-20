@@ -13,6 +13,15 @@
     <!-- Desbloqueio por biometria / senha do celular (BiometricPrompt da plataforma).
          Permissão normal, concedida na instalação; não dá acesso a dados biométricos. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Acesso pelo computador: mantém o Wi-Fi e a CPU acordados com a tela apagada, só
+         enquanto o servidor estiver ligado. Permissão normal (sem pedido). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Android 17+: sem ela o sistema derruba as conexões da rede local (o PC não alcança o
+         servidor do acesso pelo computador). Pedida só ao ligar esse acesso. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <!-- Endereço fixo index.local (mDNS): o Wi-Fi só entrega pacotes multicast com esta trava.
+         Permissão normal (sem pedido), usada só com o acesso pelo computador ligado. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <!-- Fase 10: "pré-carga do Drive só via Wi-Fi" (só lê o tipo de conexão). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- "Adicionar pasta local" (Android 11+): seletor próprio pelo caminho, que aceita também as
@@ -82,6 +91,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
             </intent-filter>
+            <!-- Atalhos ao segurar o ícone: Recentes e Digitalizar documento. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- Leitor de documentos para outros apps ("Abrir com" → Index). Só os formatos que o
@@ -148,6 +161,12 @@
 
         <service
             android:name=".data.TransferService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- Acesso pelo computador (servidor web na rede local), ligado pelo usuário. -->
+        <service
+            android:name=".web.WebService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 

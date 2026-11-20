@@ -518,17 +518,13 @@ class SearchFragment : Fragment(R.layout.fragment_search), MainActivity.KeyTarge
             }
             menu.findItem(R.id.action_search).isVisible = false
             menu.findItem(R.id.sort_reset).isVisible = false
-            for (id in intArrayOf(R.id.action_new_folder, R.id.action_upload, R.id.action_select)) {
+            for (id in intArrayOf(R.id.action_add_menu, R.id.action_select)) {
                 menu.findItem(id)?.isVisible = false
             }
             RandomUi.bindButton(menu.findItem(R.id.action_random), { startRandom() }) {
                 RandomUi.panel(requireContext(), subfolders = false, positive = R.string.random_draw) { startRandom() }
             }
             val grid = adapter.grid
-            menu.findItem(R.id.action_view_mode).apply {
-                setIcon(if (grid) R.drawable.ic_view_list else R.drawable.ic_view_grid)
-                setTitle(if (grid) R.string.view_list else R.string.view_grid)
-            }
             menu.findItem(R.id.action_bigger).isVisible = true // da lista, volta à grade
             menu.findItem(R.id.action_smaller).isVisible = grid
             menu.findItem(
@@ -568,11 +564,6 @@ class SearchFragment : Fragment(R.layout.fragment_search), MainActivity.KeyTarge
                 return true
             }
             when (item.itemId) {
-                R.id.action_view_mode -> {
-                    adapter.grid = !adapter.grid
-                    prefs.viewGrid = adapter.grid
-                    zoom.apply()
-                }
                 R.id.sort_name -> spec = spec.copy(by = SortSpec.NAME)
                 R.id.sort_size -> spec = spec.copy(by = SortSpec.SIZE)
                 R.id.sort_type -> spec = spec.copy(by = SortSpec.TYPE)

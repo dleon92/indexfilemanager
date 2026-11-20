@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Atalhos ao segurar o ícone do app. Abrem a MainActivity com uma ação própria. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_recent"
+        android:shortcutId="recent"
+        android:shortcutLongLabel="@string/shortcut_recent_long"
+        android:shortcutShortLabel="@string/shortcut_recent">
+        <intent
+            android:action="app.index.files.action.RECENT"
+            android:targetClass="app.index.files.ui.MainActivity"
+            android:targetPackage="app.index.files" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_scan"
+        android:shortcutId="scan"
+        android:shortcutLongLabel="@string/scan_document"
+        android:shortcutShortLabel="@string/shortcut_scan">
+        <intent
+            android:action="app.index.files.action.SCAN"
+            android:targetClass="app.index.files.ui.MainActivity"
+            android:targetPackage="app.index.files" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_web"
+        android:shortcutId="web"
+        android:shortcutLongLabel="@string/shortcut_web_long"
+        android:shortcutShortLabel="@string/shortcut_web">
+        <intent
+            android:action="app.index.files.action.WEB"
+            android:targetClass="app.index.files.ui.MainActivity"
+            android:targetPackage="app.index.files" />
+    </shortcut>
+</shortcuts>

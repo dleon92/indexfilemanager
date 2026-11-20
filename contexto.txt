@@ -353,6 +353,15 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
 - Extra pós-entrega (v0.18.0): digitalizar documentos com o scanner do Google (ML Kit; decisão do
   usuário): corte, filtros, sombra, flash, várias páginas; salva como PDF, JPG ou os dois na pasta.
   O flash do scanner não tem intensidade (tela do Google). Testado no S23.
+- Extra pós-entrega (v0.19.0): atalhos ao segurar o ícone (Recentes, Digitalizar) e "Adicionar
+  atalho à tela inicial" no menu das pastas em Gerenciar pastas. Botão grade/lista saiu da barra
+  (troca só pela pinça). Sem snapshot próprio: entregue junto com a v0.20.0.
+- Extra pós-entrega (v0.20.0): IndexWeb, acesso aos arquivos pelo navegador do computador na rede
+  local (decisões do usuário: armazenamento todo, senha fixa, todas as ações, WAKE_LOCK; página no
+  modelo 1 de 5, com miniaturas, seleção, baixar e enviar vários). Servidor HTTP e mDNS próprios;
+  endereço fixo http://index.local:8080. Android 17 exige ACCESS_LOCAL_NETWORK (aprovada pelo
+  usuário). Configurações agrupadas em categorias, submenus no menu da pasta, atalho IndexWeb no
+  ícone. Testado no S23.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

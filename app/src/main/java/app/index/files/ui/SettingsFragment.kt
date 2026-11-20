@@ -4,7 +4,9 @@ import android.app.TimePickerDialog
 import android.os.Bundle
 import android.text.format.DateFormat
 import android.text.format.Formatter
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.RadioGroup
 import android.widget.TextView
@@ -19,13 +21,18 @@ import app.index.files.data.Roots
 import app.index.files.security.AppLock
 import app.index.files.thumbs.ThumbnailManager
 
-/** Configurações. Layout próprio, sem androidx.preference. */
+/**
+ * Configurações de uma categoria ([SettingsCategory]). Layout próprio, sem androidx.preference:
+ * todas as seções são ligadas, e só os blocos da categoria ficam visíveis.
+ */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private lateinit var prefs: Prefs
+    private val category get() = SettingsCategory.find(arguments?.getString(ARG_CATEGORY))
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         prefs = Prefs.get(requireContext())
+        showOnlyCategory(view)
 
         bindSecurity(view)
 
@@ -474,7 +481,47 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     override fun onResume() {
         super.onResume()
-        requireActivity().setTitle(R.string.settings)
+        requireActivity().setTitle(category?.title ?: R.string.settings)
+    }
+
+    /**
+     * Deixa visíveis só as seções da categoria. Com uma seção só, o título dela some (já está na
+     * barra); com várias, a primeira fica sem a linha divisória de cima.
+     */
+    private fun showOnlyCategory(view: View) {
+        val cat = category ?: return
+        val box = (view as ViewGroup).getChildAt(0) as ViewGroup
+        var first = true
+        for (i in 0 until box.childCount) {
+            val block = box.getChildAt(i) as? ViewGroup ?: continue
+            val tag = block.tag as? String ?: continue
+            if (tag !in cat.sections) {
+                block.visibility = View.GONE
+                continue
+            }
+            if (first) block.findViewWithTag<View>("divider")?.visibility = View.GONE
+            if (cat.sections.size == 1) block.findViewWithTag<View>("header")?.visibility = View.GONE
+            first = false
+        }
+        if (cat.key == "security") addProtectedRow(box)
+    }
+
+    /** "Pastas protegidas" também em Segurança (além do menu ⋮ da tela inicial). */
+    private fun addProtectedRow(box: ViewGroup) {
+        val block = box.findViewWithTag<ViewGroup>("section_security") ?: return
+        val row = LayoutInflater.from(requireContext()).inflate(R.layout.row_setting, block, false)
+        row.findViewById<TextView>(R.id.title).setText(R.string.protected_folders)
+        row.findViewById<TextView>(R.id.summary).setText(R.string.cat_protected_sum)
+        row.setOnClickListener { (activity as? MainActivity)?.openVaultList() }
+        block.addView(row, 1)
+    }
+
+    companion object {
+        private const val ARG_CATEGORY = "category"
+
+        fun newInstance(category: String) = SettingsFragment().apply {
+            arguments = Bundle().apply { putString(ARG_CATEGORY, category) }
+        }
     }
 
     private fun switch(root: View, id: Int, value: Boolean, onChange: (Boolean) -> Unit) {
