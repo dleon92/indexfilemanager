@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.25.0 (`dist/index-v0.25.0-fase13.apk`, IndexWeb abre arquivos em nova aba, avisa antes de sair no meio de uma transferência, explica as falhas com "Tentar de novo" e pergunta se desliga ao fim do envio; senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.26.0 (`dist/index-v0.26.0-fase13.apk`, IndexWeb baixa pela página com janela de progresso própria de cada layout e salva no fim; abre arquivos em nova aba, avisa antes de sair no meio de uma transferência, explica as falhas com "Tentar de novo" e pergunta se desliga ao fim do envio; senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -801,6 +801,24 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   no Ctrl+K. Desligar o computador precisa de um programa auxiliar no PC e ficou para depois.
 - Testado no navegador com servidor de teste; instalado no Tab S7+.
 
+### Downloads pela página com janela de progresso (v0.26.0)
+
+- Baixar no IndexWeb não entrega mais direto ao navegador: a página busca o arquivo (`fetch`),
+  mostra nome, miniatura, barra, MB/s e tempo restante numa janela própria e, completo, salva de
+  uma vez (Blob + `a download`). Os blocos vão para Blobs de 32 MB, que o navegador pode guardar
+  em disco. Dois por vez; o resto em fila. Pastas e vários itens vão em .zip pelo mesmo caminho.
+- Cancelar por arquivo ou tudo; falha mostra o motivo e "Tentar de novo", que continua de onde
+  parou com `Range` (o .zip recomeça). "Salvar de novo" no que terminou.
+- Limite de 4 GB no computador e 1 GB em celular/tablet; acima disso baixa direto pelo navegador
+  e a janela avisa. (Gravar direto no disco exigiria https.)
+- Envios e downloads dividem a mesma janela, com visual de cada layout: cartão (Clássico), vidro
+  escuro com miniaturas (Galeria), faixa embaixo com cartões lado a lado (Colunas), caixa de
+  terminal (Painel duplo), anel de porcentagem (Painel inicial) e barra estreita no centro (Lista
+  com comandos).
+- O aviso ao sair da página e a pergunta "Nada / Desligar o IndexWeb" passam a valer também para
+  downloads.
+- Testado no navegador com servidor de teste; instalado no S23.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -811,7 +829,7 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 a v0.25.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.26.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -865,3 +883,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.23.0-fase13 (botões flutuantes Recentes, Downloads e IndexWeb) | 1.749.404 bytes (1.708 KB) | — |
 | v0.24.0-fase13 (IndexWeb: senha salva, instalar como app, Locais) | 1.752.336 bytes (1.711 KB) | — |
 | v0.25.0-fase13 (IndexWeb: nova aba, aviso ao sair, falhas explicadas, desligar ao fim) | 1.753.576 bytes (1.712 KB) | — |
+| v0.26.0-fase13 (IndexWeb: downloads pela página com janela de progresso por layout) | 1.757.108 bytes (1.716 KB) | — |

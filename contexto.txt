@@ -385,6 +385,10 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   cópia, movimentação ou exclusão com "Tentar de novo" só nos que falharam (EF13) e, ao fim de
   um envio, pergunta se desliga o IndexWeb (EF14 em parte; desligar o PC fica para depois).
   Instalado no Tab S7+.
+- Extra pós-entrega (v0.26.0): downloads do IndexWeb passam pela página, com janela de progresso
+  própria de cada layout (nome, miniatura, MB/s, tempo restante, cancelar, tentar de novo de onde
+  parou); completo, o navegador salva de uma vez. Acima de 4 GB (1 GB no celular) baixa direto.
+  Aviso ao sair e pergunta de desligar valem também para downloads. Instalado no S23.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

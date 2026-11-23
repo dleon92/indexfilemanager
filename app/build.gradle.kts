@@ -20,8 +20,8 @@ android {
         applicationId = "app.index.files"
         minSdk = 26
         targetSdk = 37
-        versionCode = 35
-        versionName = "0.25.0"
+        versionCode = 36
+        versionName = "0.26.0"
     }
 
     signingConfigs {

@@ -157,17 +157,73 @@ body.drawer #scrim{display:block}
 
 /* envio, visualização, diálogos */
 #drop{position:fixed;inset:8px;border:2px dashed var(--accent);border-radius:12px;background:color-mix(in srgb,var(--bg) 85%,transparent);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--accent);pointer-events:none;z-index:25;text-align:center;padding:20px}
-#ups{position:fixed;right:16px;bottom:16px;width:360px;max-height:50vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;z-index:8}
-#ups .hd{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);gap:8px}
-#ups .hd b{flex:1}
-#ups .it{padding:6px 12px;border-bottom:1px solid var(--line)}
-#ups .it .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#ups .pb{height:4px;background:var(--line);border-radius:2px;margin-top:4px;overflow:hidden}
-#ups .pb i{display:block;height:100%;background:var(--accent);width:0}
-#ups .it.err .nm{color:var(--danger)}
-#ups .it.err .pb i{background:var(--danger)}
-#ups .it .why{color:var(--danger);font-size:12px}
-#ups .sum{padding:6px 12px;border-bottom:1px solid var(--line);color:var(--danger)}
+#xf{position:fixed;right:16px;bottom:16px;width:380px;display:flex;flex-direction:column;gap:8px;z-index:8;pointer-events:none}
+.xcard{pointer-events:auto;max-height:42vh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px}
+.xcard .hd{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);gap:8px;position:sticky;top:0;background:inherit;z-index:1}
+.xcard .hd b{flex:1;min-width:0}
+.xcard .it{padding:6px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;--p:0}
+.xcard .it:last-child{border-bottom:0}
+.xcard .bd{flex:1;min-width:0}
+.xcard .it>.nm,.xcard .it>.pb,.xcard .it>.why{flex-basis:100%}
+.xcard #upl .it{display:block}
+.xcard .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xcard .meta{color:var(--muted);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xcard .pb{height:4px;background:var(--line);border-radius:2px;margin-top:4px;overflow:hidden}
+.xcard .pb i{display:block;height:100%;background:var(--accent);width:0;transition:width .15s linear}
+.xcard .pb.ind i{width:35%!important;animation:ind 1.1s ease-in-out infinite}
+@keyframes ind{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+.xcard .th{width:36px;height:36px;border-radius:6px;object-fit:cover;flex:none;background:var(--hover);display:none;align-items:center;justify-content:center;font-size:10px;color:var(--muted);text-transform:uppercase}
+.xcard .ring{display:none}
+.xcard .x{padding:2px 8px;font-size:16px;line-height:1}
+.xcard .again{padding:2px 8px;font-size:12px}
+.xcard .it.err .nm{color:var(--danger)}
+.xcard .it.err .pb i{background:var(--danger)}
+.xcard .it.cancel{opacity:.55}
+.xcard .it .why{color:var(--danger);font-size:12px}
+.xcard .it.ok .pb i{width:100%}
+.xcard .sum{padding:6px 12px;border-bottom:1px solid var(--line);color:var(--danger)}
+/* Galeria: vidro escuro, miniatura de cada arquivo */
+body.L-galeria .xcard{background:rgba(18,20,22,.9);color:#f2f2f2;border-color:rgba(255,255,255,.08);border-radius:16px;backdrop-filter:blur(10px)}
+body.L-galeria .xcard .hd,body.L-galeria .xcard .it,body.L-galeria .xcard .sum{border-color:rgba(255,255,255,.08)}
+body.L-galeria .xcard .hd{background:rgba(18,20,22,.96)}
+body.L-galeria .xcard .meta{color:#a9b0ad}
+body.L-galeria .xcard .pb{background:rgba(255,255,255,.12)}
+body.L-galeria .xcard button:not(.primary){background:rgba(255,255,255,.08);border-color:transparent;color:#f2f2f2}
+body.L-galeria .xcard .th{display:flex;width:44px;height:44px;border-radius:10px}
+/* Colunas: faixa presa embaixo, um cartão por arquivo lado a lado */
+body.L-colunas #xf{left:0;right:0;bottom:0;width:auto}
+body.L-colunas .xcard{border-radius:0;border-left:0;border-right:0;border-bottom:0;box-shadow:0 -4px 16px rgba(0,0,0,.08);max-height:none;overflow:visible}
+body.L-colunas .xcard .list{display:flex;gap:8px;overflow-x:auto;padding:8px 12px}
+body.L-colunas .xcard .it{flex:0 0 250px;border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+body.L-colunas .xcard .it:last-child{border-bottom:1px solid var(--line)}
+body.L-colunas:has(#xf .xcard:not(.hidden)) #app{padding-bottom:var(--xfh,140px)}
+/* Painel duplo: caixa de terminal, barra larga com listras */
+body.L-duplo #xf{left:50%;right:auto;transform:translateX(-50%);width:min(560px,calc(100vw - 16px))}
+body.L-duplo .xcard{font:12px/1.45 ui-monospace,"Cascadia Mono",Consolas,monospace;border:1px solid var(--accent);border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 10px 30px rgba(0,0,0,.5)}
+body.L-duplo .xcard .hd{background:var(--accent);color:var(--on-accent);border-bottom:0;padding:4px 10px}
+body.L-duplo .xcard .hd button{background:transparent;border-color:var(--on-accent);color:var(--on-accent);border-radius:2px;padding:1px 8px}
+body.L-duplo .xcard .hd b::before{content:"[ "}
+body.L-duplo .xcard .hd b::after{content:" ]"}
+body.L-duplo .xcard .pb{height:10px;border-radius:0;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 8px)}
+body.L-duplo .xcard .pb i{background:repeating-linear-gradient(90deg,var(--accent) 0 6px,transparent 6px 8px)}
+body.L-duplo .xcard .it button,body.L-duplo .xcard .sum{border-radius:2px}
+/* Painel inicial: cartão arredondado com anel de progresso */
+body.L-inicio .xcard{border-radius:18px;border:0;box-shadow:0 10px 30px rgba(0,0,0,.16)}
+body.L-inicio .xcard .hd{border-bottom:0;padding:12px 16px 6px;font-size:14px}
+body.L-inicio .xcard .it{border-bottom:0;padding:8px 16px}
+body.L-inicio .xcard #dll .ring{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--accent-soft) 0);font-size:11px;font-weight:600}
+body.L-inicio .xcard #dll .ring::before{content:"";grid-area:1/1;width:32px;height:32px;border-radius:50%;background:var(--panel)}
+body.L-inicio .xcard #dll .ring span{grid-area:1/1;position:relative}
+body.L-inicio .xcard #dll .it.err .ring{background:var(--danger)}
+body.L-inicio .xcard #dll .pb{display:none}
+/* Lista com comandos: barra estreita no centro, uma linha por arquivo */
+body.L-comandos #xf{left:50%;right:auto;transform:translateX(-50%);width:min(520px,calc(100vw - 16px))}
+body.L-comandos .xcard{border-radius:12px;box-shadow:0 16px 40px rgba(0,0,0,.22)}
+body.L-comandos .xcard .it{position:relative;padding:7px 14px}
+body.L-comandos .xcard #dll .pb{position:absolute;left:0;right:0;bottom:0;margin:0;height:2px;border-radius:0;background:transparent}
+body.L-comandos .xcard #dll .bd{display:flex;align-items:baseline;gap:10px}
+body.L-comandos .xcard #dll .nm{flex:1}
+body.L-comandos .xcard #dll .meta{margin:0;flex:none;max-width:55%}
 ul.fails{margin:0;padding-left:20px;max-height:40vh;overflow:auto;line-height:1.5;word-break:break-word}
 .dlg label.nochk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
 .dlg label.nochk input{margin:0;width:auto;flex:none}
@@ -396,7 +452,9 @@ ul.fails{margin:0;padding-left:20px;max-height:40vh;overflow:auto;line-height:1.
   td.n .mini{width:36px;height:36px;margin-right:8px}
   .grid{gap:8px;padding:8px}
   .status{padding:5px 10px;gap:10px}
-  #ups{left:8px;right:8px;bottom:8px;width:auto}
+  #xf,body.L-duplo #xf,body.L-comandos #xf{left:8px;right:8px;bottom:8px;width:auto;transform:none}
+  body.L-colunas #xf{left:0;right:0;bottom:0}
+  body.L-colunas .xcard .it{flex-basis:220px}
   .selbar{left:8px;right:8px;transform:translateY(180%);justify-content:space-between;padding:6px 6px 6px 14px}
   .has-sel .selbar{transform:none}
   .selbar .lbl{display:none}
@@ -406,7 +464,7 @@ ul.fails{margin:0;padding-left:20px;max-height:40vh;overflow:auto;line-height:1.
   .bnav button.on{color:var(--accent);font-weight:600}
   .bnav svg.i{width:20px;height:20px}
   .with-bnav .selbar{bottom:72px}
-  .with-bnav #ups{bottom:70px}
+  .with-bnav #xf{bottom:70px}
   /* clássico */
   #app.L-classico{grid-template-columns:1fr}
   .L-classico header{grid-column:1;padding:6px 10px;gap:8px}
@@ -488,7 +546,7 @@ ul.fails{margin:0;padding-left:20px;max-height:40vh;overflow:auto;line-height:1.
 </div>
 <div id="scrim"></div>
 <div id="drop" class="hidden">Solte para enviar para esta pasta</div>
-<div id="ups" class="hidden"><div class="hd"><b id="upt"></b><button id="upr" class="primary hidden">Tentar de novo</button><button id="upx">Fechar</button></div><div id="ups2" class="sum hidden"></div><div id="upl"></div></div>
+<div id="xf"><div id="dls" class="xcard hidden"><div class="hd"><b id="dlt"></b><button id="dlr" class="primary hidden">Tentar de novo</button><button id="dlx">Fechar</button></div><div id="dls2" class="sum hidden"></div><div id="dll" class="list"></div></div><div id="ups" class="xcard hidden"><div class="hd"><b id="upt"></b><button id="upr" class="primary hidden">Tentar de novo</button><button id="upx">Fechar</button></div><div id="ups2" class="sum hidden"></div><div id="upl" class="list"></div></div></div>
 <input type="file" id="fFiles" multiple class="hidden">
 <input type="file" id="fDir" webkitdirectory multiple class="hidden">
 
@@ -540,7 +598,7 @@ const thumbUrl=(e,s)=>"/api/thumb?"+q({v:vOf(e),p:pathOf(e),s,t:e.m});
 let offline=false,isDown=false,BUSY=0;
 function setOffline(on){if(isDown)on=true;if(on===offline)return;offline=on;$("#off").classList.toggle("hidden",!on)}
 // Envio, cópia, movimentação ou apagar em andamento.
-const busyNow=()=>UP.active>0||UP.q.length>0||BUSY>0;
+const busyNow=()=>UP.active>0||UP.q.length>0||BUSY>0||DL.active>0||DL.q.length>0;
 window.addEventListener("beforeunload",e=>{if(busyNow()){e.preventDefault();e.returnValue=""}});
 $("#offRetry").onclick=()=>location.reload();
 async function api(method,url,body){
@@ -825,8 +883,7 @@ document.addEventListener("change",ev=>{if(ev.target.classList.contains("hidchk"
 $("#scrim").onclick=()=>document.body.classList.remove("drawer");
 
 async function downloadSel(){const s=selected();if(!s.length)return;
-  if(s.length===1&&!s[0].d){download(fileUrl(s[0],true));return}
-  if(s.length===1){download(zipUrl(s[0]));return}
+  if(s.length===1){startDownloads([dlOf(s[0])]);return}
   const tot=s.reduce((a,e)=>a+(e.s||0),0),dirs=s.some(e=>e.d);
   const how=await modal(close=>el("div",{class:"dlg"},el("h2",{},`Baixar ${s.length} itens`+(dirs?"":` (${fmtSize(tot)})`)),
     el("div",{},"Como prefere receber?"),
@@ -835,12 +892,12 @@ async function downloadSel(){const s=selected();if(!s.length)return;
       el("button",{class:"primary",onclick:()=>close("zip")},"Um arquivo .zip")),
     el("div",{style:"color:var(--muted);font-size:12px"},"Separados: na primeira vez o navegador pode perguntar se permite baixar vários arquivos; aceite.")));
   if(!how)return;
-  if(how==="zip"&&!S.search){download("/api/zip?"+q({v:S.v,p:S.path,n:s.map(e=>e.n)}));return}
+  if(how==="zip"&&!S.search){startDownloads([{url:"/api/zip?"+q({v:S.v,p:S.path,n:s.map(e=>e.n)}),name:(S.path==="/"?(S.vols[S.v]?S.vols[S.v].name:"arquivos"):S.path.split("/").pop())+".zip",zip:true}]);return}
   if(how==="zip")toast("Na busca, os itens vêm de pastas diferentes: baixando separados.");
-  downloadMany(s.map(e=>e.d?zipUrl(e):fileUrl(e,true)));
+  startDownloads(s.map(dlOf));
 }
 function download(url){const a=el("a",{href:url,download:""});document.body.append(a);a.click();a.remove()}
-function downloadMany(urls){let i=0;const next=()=>{if(i>=urls.length)return;download(urls[i++]);setTimeout(next,350)};next();toast(`Baixando ${urls.length} itens…`)}
+const dlOf=e=>e.d?{url:zipUrl(e),name:e.n+".zip",zip:true}:{url:fileUrl(e,true),name:e.n,size:e.s,thumb:IMG.test(e.n)||VID.test(e.n)?thumbUrl(e,96):null};
 async function transfer(copy){
   const s=selected();if(!s.length)return;
   const dest=await pickFolder(copy?"Copiar para":"Mover para");if(!dest)return;
@@ -1216,14 +1273,14 @@ function pump(){
     const x=new XMLHttpRequest();
     x.open("PUT","/api/upload?"+q({v:it.v,p:it.p,name:it.f.name,rel:it.rel,m:it.f.lastModified||0}));
     x.setRequestHeader("X-Index","1");
-    x.upload.onprogress=e=>{if(e.lengthComputable)it.row.querySelector(".pb i").style.width=(e.loaded/e.total*100)+"%"};
+    x.upload.onprogress=e=>{if(e.lengthComputable){const p=e.loaded/e.total*100;it.row.querySelector(".pb i").style.width=p+"%";it.row.style.setProperty("--p",p.toFixed(1))}};
     x.onloadend=()=>{UP.active--;
       if(x.status===200){UP.done++;UP.bytes+=it.f.size||0;it.row.querySelector(".pb i").style.width="100%"}
       else{UP.fail++;it.why=upWhy(x);UP.failed.push(it);it.row.classList.add("err");if(x.status===401)showLogin();if(x.status===0)setOffline(true);
         let w=it.row.querySelector(".why");if(!w){w=el("div",{class:"why"});it.row.append(w)}w.textContent=it.why}
       updUp();
       if(!UP.active&&!UP.q.length){S.stats=null;if(it.v===S.v&&!S.search)go(S.path,true,true);loadInfo().catch(()=>{});
-        if(!UP.fail&&UP.done)afterUpload()}
+        if(!UP.fail&&UP.done)askAfter("Envio concluído",`${UP.done} arquivo(s) enviados (${fmtSize(UP.bytes)}) para ${UP.to||"/"}. E agora?`)}
       pump()};
     x.send(it.f);
   }
@@ -1235,16 +1292,16 @@ $("#upr").onclick=()=>{if(UP.active||UP.q.length||!UP.failed.length)return;
   UP.failed=[];pump()};
 
 // ---------- EF14: envio terminou: fazer nada ou desligar o IndexWeb
-async function afterUpload(){
-  if(isDown||load("idx.askDone","1")==="0")return;
-  const n=UP.done,b=UP.bytes,to=UP.to||"/";let chk;
-  const r=await modal(close=>el("div",{class:"dlg"},el("h2",{},"Envio concluído"),
-    el("div",{},`${n} arquivo(s) enviados (${fmtSize(b)}) para ${to}. E agora?`),
+async function askAfter(title,msg){
+  if(isDown||busyNow()||document.querySelector(".modal")||load("idx.askDone","1")==="0")return;
+  let chk;
+  const r=await modal(close=>el("div",{class:"dlg"},el("h2",{},title),
+    el("div",{},msg),
     el("div",{class:"btns"},el("button",{onclick:()=>close("off")},"Desligar o IndexWeb"),el("button",{class:"primary",onclick:()=>close("none")},"Nada")),
     el("label",{class:"nochk"},chk=el("input",{type:"checkbox"}),"Não perguntar de novo neste navegador"),
     el("div",{class:"muted",style:"font-size:12px"},"Para desligar depois: ⋯ › Desligar o IndexWeb.")));
   if(chk&&chk.checked)store("idx.askDone","0");
-  if(r==="off")powerOff();
+  if(r==="off"){if(busyNow())ACT.power();else powerOff()}
 }
 async function powerOff(){
   try{await api("POST","/api/shutdown")}catch(e){if(e.message!=="Sem conexão com o aparelho.")return toast(e.message)}
@@ -1270,10 +1327,107 @@ window.addEventListener("drop",async e=>{
   enqueue(out,tgt);
 });
 
+// ---------- baixar pela página: progresso na janela do layout; o navegador só salva no fim
+// O arquivo vem para a memória do navegador (em blocos de 32 MB, que ele pode guardar em disco)
+// e, completo, é salvo de uma vez. Acima do limite vai direto pelo navegador, como antes.
+const DL={q:[],active:0,items:[],done:0,bytes:0,failed:[],native:0};
+const dlLimit=()=>(touch()||narrow()?1:4)*1024**3;
+function dlErr(m){const e=new Error(m);e.dl=true;return e}
+function fmtTime(s){if(!isFinite(s)||s<0)return "";s=Math.round(s);return s<60?`${s} s`:s<3600?`${Math.floor(s/60)} min ${s%60?(s%60)+" s":""}`.trim():`${Math.floor(s/3600)} h ${Math.round(s%3600/60)} min`}
+function dlName(r,fb){const cd=r.headers.get("Content-Disposition")||"";let m=cd.match(/filename\*=UTF-8''([^;]+)/i);if(m)try{return decodeURIComponent(m[1])}catch(e){}m=cd.match(/filename="([^"]+)"/i);return m?m[1]:fb}
+function startDownloads(list){
+  if(!list.length)return;
+  if(!DL.active&&!DL.q.length){DL.done=0;DL.bytes=0;DL.native=0;DL.asked=false}
+  for(const d of list){const it={...d,parts:[],cur:[],curN:0,got:0,total:d.size||null,state:"q"};it.row=dlRow(it);$("#dll").prepend(it.row);DL.items.push(it);DL.q.push(it)}
+  $("#dls").classList.remove("hidden");updDl();dlPump();
+}
+function dlRow(it){
+  const th=it.thumb?el("img",{class:"th",alt:"",src:it.thumb,onerror:function(){this.replaceWith(el("span",{class:"th"},ext(it.name)))}}):el("span",{class:"th"},ext(it.name)||"arq");
+  it.metaEl=el("div",{class:"meta"},"Na fila");it.bar=el("i");it.pct=el("span",{},"");
+  it.btn=el("button",{class:"ib ghost x",title:"Cancelar",onclick:()=>dlCancel(it)},"×");
+  return el("div",{class:"it"},th,el("div",{class:"ring"},it.pct),el("div",{class:"bd"},el("div",{class:"nm",title:it.name},it.name),it.metaEl,el("div",{class:"pb"},it.bar)),it.btn);
+}
+function dlSet(it,p,meta){
+  if(p==null){it.bar.parentNode.classList.add("ind");it.pct.textContent=""}
+  else{it.bar.parentNode.classList.remove("ind");it.bar.style.width=p+"%";it.row.style.setProperty("--p",p.toFixed(1));it.pct.textContent=Math.floor(p)+"%"}
+  if(meta!=null)it.metaEl.textContent=meta;
+}
+function dlTick(it,force){
+  const now=performance.now();if(!force&&now-(it.ui||0)<200)return;it.ui=now;
+  const dt=(now-it.t0)/1000,sp=dt>0.4?(it.got-it.g0)/dt:0;
+  const p=it.total?Math.min(100,it.got/it.total*100):null;
+  const parts=[it.total?`${fmtSize(it.got)} de ${fmtSize(it.total)}`:fmtSize(it.got)];
+  if(sp)parts.push(fmtSize(sp)+"/s");
+  if(sp&&it.total)parts.push("faltam "+fmtTime((it.total-it.got)/sp));
+  dlSet(it,p,parts.join(" · "));
+}
+function dlPump(){while(DL.active<2&&DL.q.length)dlRun(DL.q.shift());updDl()}
+async function dlRun(it){
+  DL.active++;it.state="run";it.ctrl=new AbortController();
+  if(it.zip){it.parts=[];it.cur=[];it.curN=0;it.got=0}
+  it.t0=performance.now();it.g0=it.got;dlSet(it,it.total?it.got/it.total*100:null,"Conectando…");
+  try{
+    const h=it.got?{Range:`bytes=${it.got}-`}:{};
+    const r=await fetch(it.url,{signal:it.ctrl.signal,headers:h,credentials:"same-origin"});
+    if(r.status===401){showLogin();throw dlErr("sessão expirou (entre de novo)")}
+    if(r.status===404)throw dlErr("não existe mais");
+    if(!r.ok)throw dlErr((await r.json().catch(()=>({}))).error||("erro "+r.status));
+    setOffline(false);
+    if(r.status!==206){it.parts=[];it.cur=[];it.curN=0;it.got=0;it.g0=0}
+    it.name=dlName(r,it.name);it.type=(r.headers.get("Content-Type")||"").split(";")[0]||"application/octet-stream";
+    const len=+r.headers.get("Content-Length")||0;if(len)it.total=it.got+len;
+    if(it.total&&it.total>dlLimit()){it.ctrl.abort();dlNative(it);return}
+    const rd=r.body.getReader();
+    for(;;){const {done,value}=await rd.read();if(done)break;
+      it.cur.push(value);it.curN+=value.length;it.got+=value.length;
+      if(it.curN>=32*1024*1024){it.parts.push(new Blob(it.cur));it.cur=[];it.curN=0}
+      if(!it.total&&it.got>dlLimit()){it.ctrl.abort();dlNative(it);return}
+      dlTick(it)}
+    if(it.total&&it.got<it.total)throw dlErr("conexão perdida");
+    it.parts.push(new Blob(it.cur));it.cur=[];it.curN=0;
+    const blob=new Blob(it.parts,{type:it.type});it.parts=[];
+    it.blobUrl=URL.createObjectURL(blob);it.state="ok";DL.done++;DL.bytes+=blob.size;
+    dlSave(it);
+    it.row.classList.add("ok");dlSet(it,100,`${fmtSize(blob.size)} · salvo pelo navegador`);
+    it.btn.replaceWith(it.btn=el("button",{class:"again",title:"Salvar outra cópia",onclick:()=>dlSave(it)},"Salvar de novo"));
+  }catch(e){
+    if(it.state!=="cancel"&&it.state!=="native"){
+      it.state="err";it.why=e.dl?e.message:"conexão perdida";DL.failed.push(it);
+      it.row.classList.add("err");dlSet(it,it.total?it.got/it.total*100:0,it.why+(it.got&&!it.zip?` · ${fmtSize(it.got)} já baixados, continua de onde parou`:""));
+    }
+  }finally{DL.active--;dlPump();dlEnd()}
+}
+function dlSave(it){const a=el("a",{href:it.blobUrl,download:it.name});document.body.append(a);a.click();a.remove()}
+function dlNative(it){it.state="native";it.parts=[];it.cur=[];DL.native++;download(it.url);
+  it.btn.remove();dlSet(it,null,"Grande demais para passar pela página: o navegador está baixando direto.");it.bar.parentNode.classList.remove("ind")}
+function dlCancel(it){
+  if(it.state==="q"){DL.q=DL.q.filter(x=>x!==it)}
+  else if(it.state==="run"){it.state="cancel";it.ctrl.abort()}
+  else if(it.state==="err"){DL.failed=DL.failed.filter(x=>x!==it)}
+  it.state="cancel";it.parts=[];it.cur=[];it.row.classList.remove("err");it.row.classList.add("cancel");it.btn.remove();dlSet(it,0,"Cancelado");updDl();
+}
+function updDl(){const idle=!DL.active&&!DL.q.length;
+  const live=DL.items.filter(x=>x.state!=="cancel");
+  const okN=DL.items.filter(x=>x.state==="ok").length;
+  $("#dlt").textContent=idle?(DL.failed.length?`Baixados ${okN} de ${live.length} arquivo(s)`:`Download concluído: ${okN} arquivo(s)`):`Baixando… ${okN} de ${live.length} pronto(s)`;
+  $("#dlr").classList.toggle("hidden",!(idle&&DL.failed.length));$("#dlr").textContent=`Tentar de novo (${DL.failed.length})`;
+  const sum=$("#dls2");if(idle&&DL.failed.length){const c={};DL.failed.forEach(it=>c[it.why]=(c[it.why]||0)+1);sum.textContent="Falharam: "+Object.entries(c).map(([w,n])=>`${n} ${w}`).join(", ")+".";sum.classList.remove("hidden")}else sum.classList.add("hidden");
+  $("#dlx").textContent=idle?"Fechar":"Cancelar tudo";
+}
+function dlEnd(){updDl();if(DL.active||DL.q.length)return;
+  if(DL.done&&!DL.failed.length&&!DL.asked){DL.asked=true;askAfter("Download concluído",`${DL.done} arquivo(s) baixados (${fmtSize(DL.bytes)}). E agora?`)}}
+$("#dlr").onclick=()=>{if(DL.active||DL.q.length)return;
+  for(const it of DL.failed){it.state="q";it.row.classList.remove("err");dlSet(it,it.total?it.got/it.total*100:0,"Na fila");DL.q.push(it)}
+  DL.failed=[];DL.asked=false;dlPump()};
+$("#dlx").onclick=async()=>{
+  if(DL.active||DL.q.length){if(!await confirmDlg("Cancelar os downloads?","O que já terminou continua salvo; o resto é descartado.","Cancelar downloads"))return;[...DL.q,...DL.items.filter(x=>x.state==="run")].forEach(dlCancel);return}
+  DL.items.forEach(it=>{if(it.blobUrl)URL.revokeObjectURL(it.blobUrl)});
+  DL.items=[];DL.failed=[];DL.done=DL.bytes=DL.native=0;DL.asked=false;$("#dll").innerHTML="";$("#dls").classList.add("hidden")};
+
 // ---------- abrir arquivo (EF10): sempre numa nova aba; o que o navegador não mostra é baixado
 function openFile(e){
   if(IMG.test(e.n)||VID.test(e.n)||AUD.test(e.n)||PDF.test(e.n)||TXT.test(e.n))window.open(fileUrl(e,false),"_blank","noopener");
-  else download(fileUrl(e,true));
+  else startDownloads([dlOf(e)]);
 }
 
 // ---------- diálogos
