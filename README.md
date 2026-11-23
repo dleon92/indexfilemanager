@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.20.0 (`dist/index-v0.20.0-fase13.apk`, IndexWeb: arquivos pelo navegador do computador; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.21.0 (`dist/index-v0.21.0-fase13.apk`, IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -722,6 +722,17 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 - Compilação: cache de configuração e compilação paralela no `gradle.properties`.
 - Testado no S23 (página, nome index.local, Wi-Fi e roteador do celular).
 
+### Página no celular e no tablet (v0.21.0)
+
+- Só CSS e um pouco de JS em `assets/web/index.html`; no computador nada muda.
+- Até 1100 px: barra lateral mais estreita. Até 760 px: pastas, armazenamento e aparelho numa
+  gaveta (botão ☰), caminho numa linha que rola, busca na largura toda, botões numa faixa que rola,
+  lista só com nome e tamanho, painel de envio, visualização e diálogos ajustados à tela.
+- Tela de toque: um toque abre, segurar seleciona; com seleção ativa o toque marca/desmarca e a
+  barra mostra só as ações da seleção e "✕ Limpar". Alvos maiores, caixas de seleção sempre
+  visíveis nas miniaturas, deslizar troca de arquivo na visualização (exceto PDF e texto).
+- Testado no navegador em tamanho de celular e tablet; instalado no S23 e no Tab S7+.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -732,7 +743,7 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 e v0.20.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.21.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -781,3 +792,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.18.0-fase13 (digitalizar documentos) | 1.679.353 bytes (1.640 KB) | — |
 | v0.19.0-fase13 (atalhos no ícone e de pastas; sem snapshot próprio, entregue com a v0.20.0) | 1.686.881 bytes (1.647 KB) | — |
 | v0.20.0-fase13 (IndexWeb, configurações em categorias) | 1.723.816 bytes (1.683 KB) | — |
+| v0.21.0-fase13 (IndexWeb no celular e no tablet) | 1.725.084 bytes (1.684 KB) | — |

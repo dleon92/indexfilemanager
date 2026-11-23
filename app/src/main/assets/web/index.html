@@ -109,6 +109,68 @@ td.n .k{vertical-align:middle}
 #pv img,#pv video{max-width:100%;max-height:100%}
 #pv iframe{width:100%;height:100%;border:0;background:#fff;border-radius:6px}
 #pv audio{width:min(600px,90vw)}
+/* ---------- celular e tablet */
+#menu,#bClr,#scrim{display:none}
+#app{height:100dvh}
+#login form{width:min(320px,92vw)}
+.dlg .btns{flex-wrap:wrap}
+#toast{max-width:min(80vw,520px)!important}
+/* telas de toque: alvos maiores, caixas de seleção sempre visíveis */
+@media (pointer:coarse){
+  html{-webkit-text-size-adjust:100%}
+  body{touch-action:manipulation}
+  button{padding:9px 14px;min-height:40px}
+  input[type=text],input[type=password],input[type=search]{padding:9px 11px;font-size:16px}
+  input[type=checkbox]{width:20px;height:20px}
+  td{padding:10px}
+  .tn{padding:7px 6px}
+  .vol{padding:10px}
+  .crumbs span{padding:6px 8px}
+  .tile .tc{opacity:.9;width:24px;height:24px}
+  .tile,tr.row{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+  #app.has-sel #bClr{display:inline-block}
+}
+/* tablet */
+@media (max-width:1100px){
+  #app{grid-template-columns:220px 1fr}
+  .bar2{gap:5px}
+}
+/* celular (ou tablet em pé estreito): pastas viram gaveta */
+@media (max-width:760px){
+  #app{grid-template-columns:1fr}
+  header{grid-column:1;gap:10px;padding:6px 10px}
+  header .dev{display:none}
+  #bat{font-size:12px}
+  #menu{display:inline-block;font-size:18px;line-height:1;padding:6px 12px}
+  aside{position:fixed;top:0;left:0;bottom:0;width:min(320px,84vw);z-index:8;transform:translateX(-102%);transition:transform .2s ease;box-shadow:4px 0 24px rgba(0,0,0,.25);border-right:none}
+  #app.drawer aside{transform:none}
+  #app.drawer #scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:7}
+  .bar1{padding:6px 10px;gap:6px}
+  .crumbs{flex-wrap:nowrap;overflow-x:auto;min-width:0;scrollbar-width:none}
+  .crumbs::-webkit-scrollbar{display:none}
+  .crumbs span{white-space:nowrap}
+  #q{width:100%!important;flex-basis:100%;order:3}
+  .bar2{flex-wrap:nowrap;overflow-x:auto;padding:6px 10px;scrollbar-width:none}
+  .bar2::-webkit-scrollbar{display:none}
+  .bar2 .sp{flex:0 0 4px}
+  .bar2 label{white-space:nowrap}
+  /* com algo selecionado, a barra mostra só as ações da seleção */
+  #app.has-sel #bUp,#app.has-sel #bUpDir,#app.has-sel #bMk,#app.has-sel .bar2 .gap{display:none}
+  #app.has-sel #bClr{display:inline-block}
+  th.m,td.m{display:none}
+  td{padding-left:8px;padding-right:8px}
+  td.n .k{width:30px}
+  td.n .mini{width:36px;height:36px;margin-right:8px}
+  .grid{gap:8px;padding:8px}
+  #status{padding:5px 10px;gap:10px;flex-wrap:wrap}
+  #ups{left:8px;right:8px;bottom:8px;width:auto}
+  #pv .top{flex-wrap:wrap;padding:8px 10px;gap:6px}
+  #pv .top .nm{order:-1;flex-basis:100%;font-size:13px}
+  #pv .top .x{margin-left:auto}
+  #pv .body{padding:0 6px 6px}
+  .dlg{padding:16px;width:94vw}
+  .pick{max-height:55vh}
+}
 </style>
 </head>
 <body>
@@ -124,6 +186,7 @@ td.n .k{vertical-align:middle}
 
 <div id="app" class="hidden">
   <header>
+    <button id="menu" title="Pastas e armazenamento" aria-label="Menu">☰</button>
     <span class="brand">Index</span>
     <span class="dev" id="dev"></span>
     <span class="sp"></span>
@@ -138,6 +201,7 @@ td.n .k{vertical-align:middle}
     <h3>Aparelho</h3>
     <div class="info" id="devinfo"></div>
   </aside>
+  <div id="scrim"></div>
   <main>
     <div class="bar1">
       <button id="up" title="Pasta acima (Backspace)">↑</button>
@@ -148,7 +212,8 @@ td.n .k{vertical-align:middle}
       <button id="bUp">Enviar arquivos</button>
       <button id="bUpDir">Enviar pasta</button>
       <button id="bMk">Nova pasta</button>
-      <span style="width:8px"></span>
+      <span class="gap" style="width:8px"></span>
+      <button id="bClr" title="Limpar seleção">✕ Limpar</button>
       <button id="bDl" disabled>Baixar</button>
       <button id="bRn" disabled>Renomear</button>
       <button id="bMv" disabled>Mover</button>
@@ -167,7 +232,7 @@ td.n .k{vertical-align:middle}
 </div>
 
 <div id="ups" class="hidden"><div class="hd"><b id="upt"></b><button id="upx">Fechar</button></div><div id="upl"></div></div>
-<div id="pv" class="hidden"><div class="top"><button id="pvPrev">‹ Anterior</button><button id="pvNext">Próximo ›</button><span class="nm" id="pvName"></span><button id="pvDl">Baixar</button><button id="pvClose">Fechar (Esc)</button></div><div class="body" id="pvBody"></div></div>
+<div id="pv" class="hidden"><div class="top"><button id="pvPrev">‹ Anterior</button><button id="pvNext">Próximo ›</button><span class="nm" id="pvName"></span><button id="pvDl">Baixar</button><button id="pvClose" class="x" title="Fechar (Esc)">Fechar</button></div><div class="body" id="pvBody"></div></div>
 <input type="file" id="fFiles" multiple class="hidden">
 <input type="file" id="fDir" webkitdirectory multiple class="hidden">
 
@@ -179,6 +244,8 @@ const S={vols:[],v:0,path:"/",entries:[],sel:new Set(),last:null,sort:{k:"n",asc
 try{S.hidden=localStorage.getItem("idx.hidden")==="1"}catch(e){}
 S.zoom="m";try{S.zoom=localStorage.getItem("idx.zoom")||"m"}catch(e){}
 const ZOOM={s:{px:110,q:192},m:{px:170,q:256},l:{px:260,q:384}};
+// Toque (celular/tablet): um toque abre; segurar seleciona; com algo selecionado, o toque marca/desmarca.
+const touch=()=>matchMedia("(pointer:coarse)").matches;
 const thumbable=n=>IMG.test(n)||VID.test(n)||AUD.test(n);
 
 const IMG=/\.(jpe?g|png|gif|webp|bmp|heic|heif|avif)$/i, VID=/\.(mp4|m4v|webm|mkv|mov|3gp|avi|ts)$/i, AUD=/\.(mp3|m4a|aac|ogg|opus|flac|wav|amr)$/i, PDF=/\.pdf$/i, TXT=/\.(txt|md|log|json|xml|csv|srt|vtt|ini|cfg|conf|yml|yaml|kt|java|py|js|css|html?|sh|bat)$/i;
@@ -244,6 +311,7 @@ function renderVols(){
 
 // ---------- navegação
 async function go(path,replace){
+  $("#app").classList.remove("drawer");
   S.search=null;$("#q").value="";
   let j;
   try{j=await api("GET","/api/list?"+q({v:S.v,p:path}))}
@@ -290,7 +358,7 @@ function render(){
       if(!e.d&&VID.test(e.n))th.append(el("span",{class:"vb"},"▶ vídeo"));
       const cb=el("input",{type:"checkbox",class:"tc",title:"Selecionar",onclick:ev=>{ev.stopPropagation();if(ev.target.checked)S.sel.add(k);else S.sel.delete(k);S.last=k;render()},ondblclick:ev=>ev.stopPropagation()});
       cb.checked=S.sel.has(k);
-      g.append(el("div",{class:"tile"+(S.sel.has(k)?" sel":""),title:e.n+(e.d?"":"  ·  "+fmtSize(e.s)),onclick:ev=>clickItem(ev,e,items),ondblclick:()=>openItem(e,items)},cb,th,el("div",{class:"tt"},e.n)));
+      g.append(el("div",{class:"tile"+(S.sel.has(k)?" sel":""),title:e.n+(e.d?"":"  ·  "+fmtSize(e.s)),onclick:ev=>clickItem(ev,e,items),ondblclick:()=>{if(!touch())openItem(e,items)},oncontextmenu:ev=>holdItem(ev,e)},cb,th,el("div",{class:"tt"},e.n)));
     }
     list.append(g);
   }else{
@@ -307,7 +375,7 @@ function render(){
         ?el("img",{class:"mini",loading:"lazy",alt:"",src:"/api/thumb?"+q({v:S.v,p:pathOf(e),s:96,t:e.m}),onerror:function(){this.replaceWith(el("span",{class:"k"},ext(e.n)))}})
         :el("span",{class:"k"},e.d?"pasta":ext(e.n));
       const name=el("td",{class:"n",title:S.search?join(e.p,e.n):e.n},lead,el("span",{class:e.d?"dir":""},e.n),S.search?el("span",{style:"color:var(--muted);margin-left:8px"},e.p):null);
-      tb.append(el("tr",{class:"row"+(S.sel.has(k)?" sel":""),onclick:ev=>clickItem(ev,e,items),ondblclick:()=>openItem(e,items)},el("td",{class:"chk"},cb),name,el("td",{class:"s"},e.d?"":fmtSize(e.s)),el("td",{class:"m"},fmtDate(e.m))));
+      tb.append(el("tr",{class:"row"+(S.sel.has(k)?" sel":""),onclick:ev=>clickItem(ev,e,items),ondblclick:()=>{if(!touch())openItem(e,items)},oncontextmenu:ev=>holdItem(ev,e)},el("td",{class:"chk"},cb),name,el("td",{class:"s"},e.d?"":fmtSize(e.s)),el("td",{class:"m"},fmtDate(e.m))));
     }
     t.append(tb);list.append(t);
   }
@@ -317,6 +385,8 @@ function render(){
   const sel=selected();
   $("#st2").textContent=sel.length?`${sel.length} selecionado${sel.length===1?"":"s"} (${fmtSize(sel.reduce((a,e)=>a+(e.s||0),0))})`:"";
   const n=sel.length,ro=!S.writable;
+  $("#app").classList.toggle("has-sel",n>0);
+  cr.scrollLeft=cr.scrollWidth;
   $("#bDl").disabled=!n;$("#bRn").disabled=n!==1||!!S.search;$("#bMv").disabled=!n||!!S.search||ro;$("#bCp").disabled=!n||!!S.search;$("#bRm").disabled=!n||!!S.search||ro;
   $("#bUp").disabled=$("#bUpDir").disabled=$("#bMk").disabled=!!S.search||ro;
   $("#up").disabled=S.path==="/";
@@ -326,9 +396,20 @@ function sortBy(k){if(S.sort.k===k)S.sort.asc=!S.sort.asc;else{S.sort.k=k;S.sort
 function selected(){const all=S.search||S.entries;return all.filter(e=>S.sel.has(keyOf(e)))}
 function clickItem(ev,e,items){
   const k=keyOf(e);
+  if(touch()&&!ev.shiftKey&&!ev.ctrlKey&&!ev.metaKey){
+    if(!S.sel.size){openItem(e,items);return}
+    if(S.sel.has(k))S.sel.delete(k);else S.sel.add(k);S.last=k;render();return;
+  }
   if(ev.shiftKey&&S.last!=null){const ks=items.map(keyOf);let a=ks.indexOf(S.last),b=ks.indexOf(k);if(a>b)[a,b]=[b,a];if(!ev.ctrlKey&&!ev.metaKey)S.sel.clear();for(let i=a;i<=b;i++)S.sel.add(ks[i])}
   else if(ev.ctrlKey||ev.metaKey){if(S.sel.has(k))S.sel.delete(k);else S.sel.add(k);S.last=k}
   else{S.sel.clear();S.sel.add(k);S.last=k}
+  render();
+}
+function holdItem(ev,e){
+  if(!touch())return;
+  ev.preventDefault();const k=keyOf(e);
+  if(S.sel.has(k))S.sel.delete(k);else S.sel.add(k);S.last=k;
+  if(navigator.vibrate)try{navigator.vibrate(15)}catch(x){}
   render();
 }
 function openItem(e,items){
@@ -353,6 +434,9 @@ function renderTree(){
 
 // ---------- ações
 $("#up").onclick=()=>go(parent(S.path));
+$("#menu").onclick=()=>$("#app").classList.toggle("drawer");
+$("#scrim").onclick=()=>$("#app").classList.remove("drawer");
+$("#bClr").onclick=()=>{S.sel.clear();render()};
 $("#bRf").onclick=()=>{loadInfo().catch(()=>{});go(S.path,true)};
 $("#hid").onchange=e=>{S.hidden=e.target.checked;try{localStorage.setItem("idx.hidden",S.hidden?"1":"0")}catch(x){}render();renderTree()};
 $("#vList").onclick=()=>{S.view="list";try{localStorage.setItem("idx.view","list")}catch(e){}render()};
@@ -470,6 +554,11 @@ function closePv(){$("#pv").classList.add("hidden");$("#pvBody").innerHTML=""}
 $("#pvClose").onclick=closePv;
 $("#pvPrev").onclick=()=>{if(PV.i>0){PV.i--;showPv()}};
 $("#pvNext").onclick=()=>{if(PV.i<PV.list.length-1){PV.i++;showPv()}};
+// deslizar para o lado troca de arquivo (toque)
+{let x0=null,y0=0;const b=$("#pvBody");
+  b.addEventListener("touchstart",e=>{if(e.touches.length===1){x0=e.touches[0].clientX;y0=e.touches[0].clientY}else x0=null},{passive:true});
+  b.addEventListener("touchend",e=>{if(x0==null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!b.querySelector("iframe")){if(dx<0)$("#pvNext").click();else $("#pvPrev").click()}},{passive:true});}
 $("#pvDl").onclick=()=>{const e=PV.list[PV.i];if(e)download(fileUrl(pathOf(e),true))};
 
 // ---------- diálogos

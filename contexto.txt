@@ -362,6 +362,10 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   endereço fixo http://index.local:8080. Android 17 exige ACCESS_LOCAL_NETWORK (aprovada pelo
   usuário). Configurações agrupadas em categorias, submenus no menu da pasta, atalho IndexWeb no
   ícone. Testado no S23.
+- Extra pós-entrega (v0.21.0): página do IndexWeb para celular e tablet (pedido do usuário). Até
+  760 px as pastas viram gaveta (☰), botões numa faixa que rola e a lista mostra nome e tamanho;
+  no toque, um toque abre e segurar seleciona, deslizar troca de arquivo na visualização. Nada
+  muda no computador. Instalado no S23 e no Tab S7+.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,
