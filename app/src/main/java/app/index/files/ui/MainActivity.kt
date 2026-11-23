@@ -16,6 +16,7 @@ import android.view.ViewStub
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
@@ -44,6 +45,7 @@ import app.index.files.security.Vault
 import app.index.files.data.VaultIndex
 import app.index.files.thumbs.Preload
 import app.index.files.thumbs.ThumbnailManager
+import app.index.files.web.WebService
 import com.google.android.gms.auth.api.identity.AuthorizationResult
 
 /** Activity única; as telas são Fragments simples, sem biblioteca de navegação. */
@@ -163,6 +165,7 @@ class MainActivity : AppCompatActivity() {
         }
         fm.addOnBackStackChangedListener { syncToolbar() }
         syncToolbar()
+        setupFabs()
         Preload.addListener(preloadListener)
         if (locked) showLock()
         // Indexação incremental ao abrir o app, depois do primeiro frame (não pesa na abertura).
@@ -295,6 +298,115 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Preload.removeListener(preloadListener)
+        WebService.removeListener(webListener)
+    }
+
+    // ---- Botões flutuantes: Recentes, Downloads e IndexWeb (EF08) ----
+
+    private lateinit var fabs: View
+    private lateinit var fabWeb: ImageButton
+    private val webListener: () -> Unit = { updateFabs() }
+
+    private fun setupFabs() {
+        fabs = findViewById(R.id.fabs)
+        fabWeb = findViewById(R.id.fab_web)
+        findViewById<View>(R.id.fab_recent).setOnClickListener { openRecentShortcut() }
+        findViewById<View>(R.id.fab_download).setOnClickListener { openDownloads() }
+        // Chave: tocar liga/desliga; segurar abre as configurações do IndexWeb.
+        fabWeb.setOnClickListener { toggleWeb() }
+        fabWeb.setOnLongClickListener {
+            if (!supportFragmentManager.isStateSaved) push(WebFragment())
+            true
+        }
+        WebService.addListener(webListener)
+        supportFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks() {
+            override fun onFragmentViewCreated(fm: FragmentManager, f: Fragment, v: View, b: Bundle?) = updateFabs()
+            override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) = updateFabs()
+        }, false)
+        updateFabs()
+    }
+
+    /** Só na lista de pastas e dentro de uma pasta (fora da seleção, da barra de colar e das protegidas). */
+    fun updateFabs() {
+        if (!::fabs.isInitialized) return
+        val f = supportFragmentManager.findFragmentById(R.id.content)
+        val show = !saving && when (f) {
+            is HomeFragment -> f.view != null
+            is BrowserFragment -> f.view != null && f.fabsAllowed()
+            else -> false
+        }
+        fabs.visibility = if (show) View.VISIBLE else View.GONE
+        val on = WebService.running
+        fabWeb.setBackgroundResource(if (on) R.drawable.fab_bg_on else R.drawable.fab_bg)
+        fabWeb.setImageResource(if (on) R.drawable.ic_fab_web_on else R.drawable.ic_fab_web_off)
+        fabWeb.imageTintList = android.content.res.ColorStateList.valueOf(themeColor(if (on) R.attr.idxOnAccent else R.attr.idxTextSecondary))
+        val desc = getString(if (on) R.string.fab_web_on else R.string.fab_web_off)
+        fabWeb.contentDescription = desc
+        fabWeb.tooltipText = desc
+    }
+
+    private fun themeColor(attr: Int): Int {
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(attr, tv, true)
+        return tv.data
+    }
+
+    /** Liga direto se já está tudo pronto; senão a tela do IndexWeb pede o que falta e liga. */
+    private fun toggleWeb() {
+        if (WebService.running) {
+            WebService.stop(this)
+            return
+        }
+        val ready = Build.VERSION.SDK_INT >= 30 && Roots.hasAllFiles() &&
+            (Build.VERSION.SDK_INT < 37 || checkSelfPermission(LAN_PERMISSION) == android.content.pm.PackageManager.PERMISSION_GRANTED) &&
+            WebService.hasPassword(this)
+        if (ready) WebService.start(this)
+        else if (!supportFragmentManager.isStateSaved) push(WebFragment.newInstance(autoStart = true))
+    }
+
+    /**
+     * Abre a pasta Download do aparelho: a que já está na lista de pastas ou, se não estiver,
+     * adiciona (pede "Acesso a todos os arquivos" se faltar).
+     */
+    private fun openDownloads() {
+        if (!Roots.hasAllFiles()) {
+            askAllFiles { granted ->
+                if (!granted) Toast.makeText(this, R.string.all_files_denied_downloads, Toast.LENGTH_LONG).show()
+                else if (!isFinishing && !supportFragmentManager.isStateSaved) openDownloads()
+            }
+            return
+        }
+        val app = applicationContext
+        val dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+        Bg.run({
+            val found = Roots.allIncludingProtected(app).firstOrNull { r ->
+                (r.isFile && java.io.File(r.docId) == dir) || (r.source == Roots.LOCAL && r.docId == "primary:Download")
+            }
+            when {
+                found != null && Vault.isHiddenRoot(app, found) -> DL_PROTECTED to 0L
+                found != null -> DL_OPEN to found.id
+                !dir.isDirectory -> DL_MISSING to 0L
+                else -> {
+                    val id = Roots.addFile(app, dir, "Download")
+                    if (id > 0) DL_ADDED to id else DL_MISSING to 0L
+                }
+            }
+        }) { res ->
+            if (isFinishing || supportFragmentManager.isStateSaved) return@run
+            val (what, id) = res.getOrNull() ?: (DL_MISSING to 0L)
+            when (what) {
+                DL_PROTECTED -> Toast.makeText(this, R.string.fab_downloads_protected, Toast.LENGTH_LONG).show()
+                DL_MISSING -> Toast.makeText(this, R.string.fab_downloads_missing, Toast.LENGTH_LONG).show()
+                else -> {
+                    if (what == DL_ADDED) {
+                        notifyRootsChanged()
+                        Indexer.start(app, id)
+                        Toast.makeText(this, R.string.fab_downloads_added, Toast.LENGTH_SHORT).show()
+                    }
+                    push(BrowserFragment.newInstance(id))
+                }
+            }
+        }
     }
 
     // ---- Tela larga e teclado (fase 12) ----
@@ -996,5 +1108,10 @@ class MainActivity : AppCompatActivity() {
         const val ACTION_SCAN = "app.index.files.action.SCAN"
         const val ACTION_WEB = "app.index.files.action.WEB"
         private const val TWO_PANE_DP = 840
+        private const val LAN_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
+        private const val DL_OPEN = 0
+        private const val DL_ADDED = 1
+        private const val DL_MISSING = 2
+        private const val DL_PROTECTED = 3
     }
 }

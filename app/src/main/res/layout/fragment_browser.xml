@@ -34,7 +34,7 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingHorizontal="2dp"
-            android:paddingBottom="16dp"
+            android:paddingBottom="88dp"
             android:scrollbars="none" />
 
         <app.index.files.ui.FastScroller

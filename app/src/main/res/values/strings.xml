@@ -523,4 +523,11 @@
     <string name="sub_opening">Ao abrir o app</string>
     <string name="start_folder">Pasta inicial</string>
     <string name="start_folder_none">Lista de pastas</string>
+    <string name="fab_downloads">Downloads</string>
+    <string name="fab_web_on">IndexWeb ligado. Toque para desligar; segure para as configurações.</string>
+    <string name="fab_web_off">IndexWeb desligado. Toque para ligar; segure para as configurações.</string>
+    <string name="fab_downloads_protected">A pasta Download está protegida. Abra-a pelas pastas protegidas.</string>
+    <string name="fab_downloads_added">Pasta Download adicionada à lista de pastas.</string>
+    <string name="fab_downloads_missing">Pasta Download não encontrada.</string>
+    <string name="all_files_denied_downloads">Sem "Acesso a todos os arquivos" o Index não consegue abrir a pasta Download.</string>
 </resources>

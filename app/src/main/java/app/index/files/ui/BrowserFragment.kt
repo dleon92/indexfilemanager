@@ -940,7 +940,12 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
     private fun selectionChanged() {
         updateTitle()
         requireActivity().invalidateOptionsMenu()
+        (activity as? MainActivity)?.updateFabs()
     }
+
+    /** Botões flutuantes da MainActivity: fora da seleção, da barra de colar e das pastas protegidas. */
+    fun fabsAllowed() = !selecting && vaultId == null &&
+        (!::pasteBar.isInitialized || pasteBar.visibility != View.VISIBLE)
 
     /** "Abrir com...": um arquivo só, sempre pergunta o app. */
     private fun openWithSelected() {
@@ -1099,6 +1104,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         // Recentes não recebe arquivos (é uma lista do aparelho todo): a barra espera outra pasta.
         if ((!Clip.active && !main.saving) || root?.isRecent == true) {
             pasteBar.visibility = View.GONE
+            main.updateFabs()
             return
         }
         if (main.saving) {
@@ -1111,6 +1117,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             here.setText(R.string.paste_here)
         }
         pasteBar.visibility = View.VISIBLE
+        main.updateFabs()
     }
 
     /** "Salvar no Index": copia os arquivos recebidos para esta pasta e volta ao app de origem. */

@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.22.0 (`dist/index-v0.22.0-fase13.apk`, IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.23.0 (`dist/index-v0.23.0-fase13.apk`, botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -752,6 +752,22 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   botão Desligar, nunca aparecia.
 - Testado no navegador em computador e celular; instalado no S23 e no Tab S7+.
 
+## Botões flutuantes (v0.23.0)
+
+- Três botões no canto de baixo da lista de pastas e de dentro das pastas: Recentes, Downloads
+  e IndexWeb. Ficam 52 dp longe da borda direita, fora da faixa da rolagem rápida. Somem na
+  seleção, com a barra de colar aberta, nas pastas protegidas e nas outras telas. As listas
+  ganharam 88 dp de espaço no fim para o último item não ficar atrás deles.
+- Ícones próprios: relógio com seta voltando (Recentes), seta descendo para a bandeja
+  (Downloads) e computador com sinal de Wi-Fi (IndexWeb). Desligado: botão claro e sinal
+  cortado por um traço; ligado: botão cheio na cor do tema e sinal aceso.
+- Recentes abre a pasta Recentes do aparelho (como o atalho do ícone).
+- Downloads abre a pasta Download; se não estiver na lista de pastas, adiciona e avisa (pede
+  "Acesso a todos os arquivos" se faltar). Protegida: avisa e não abre.
+- IndexWeb é uma chave: tocar liga ou desliga; se faltar senha ou permissão, abre a tela do
+  IndexWeb, que pede o que falta e liga. Segurar abre a tela do IndexWeb.
+- Testado no Tab S7+ (chave ligou e desligou o servidor; segurar abriu a tela); instalado no S23.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -762,7 +778,7 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 a v0.22.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.23.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -813,3 +829,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.20.0-fase13 (IndexWeb, configurações em categorias) | 1.723.816 bytes (1.683 KB) | — |
 | v0.21.0-fase13 (IndexWeb no celular e no tablet) | 1.725.084 bytes (1.684 KB) | — |
 | v0.22.0-fase13 (IndexWeb com 6 layouts, desligar fecha conexões) | 1.742.872 bytes (1.702 KB) | — |
+| v0.23.0-fase13 (botões flutuantes Recentes, Downloads e IndexWeb) | 1.749.404 bytes (1.708 KB) | — |

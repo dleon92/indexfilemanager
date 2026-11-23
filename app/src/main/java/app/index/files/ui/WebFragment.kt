@@ -45,6 +45,10 @@ class WebFragment : Fragment(R.layout.fragment_web) {
         view.findViewById<View>(R.id.row_web_password).setOnClickListener { askPassword(null) }
         view.findViewById<View>(R.id.row_web_all_files).setOnClickListener { openAllFiles() }
         WebService.addListener(listener)
+        // Aberta pelo botão flutuante do IndexWeb: já segue o fluxo de ligar (pede o que faltar).
+        if (savedInstanceState == null && arguments?.getBoolean(ARG_AUTO) == true && !WebService.running) {
+            view.post { if (isAdded && !WebService.running) toggle() }
+        }
     }
 
     override fun onDestroyView() {
@@ -180,6 +184,11 @@ class WebFragment : Fragment(R.layout.fragment_web) {
 
     companion object {
         private const val MIN = 6
+        private const val ARG_AUTO = "auto_start"
+
+        fun newInstance(autoStart: Boolean) = WebFragment().apply {
+            arguments = Bundle().apply { putBoolean(ARG_AUTO, autoStart) }
+        }
         private const val LAN = "android.permission.ACCESS_LOCAL_NETWORK"
         private const val NOTIF = "android.permission.POST_NOTIFICATIONS"
     }
