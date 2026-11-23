@@ -15,6 +15,7 @@ import android.os.storage.StorageManager
 import android.util.Log
 import android.util.Size
 import android.webkit.MimeTypeMap
+import app.index.files.R
 import app.index.files.security.Vault
 import org.json.JSONArray
 import org.json.JSONObject
@@ -305,9 +306,12 @@ class WebServer(
         if (r.method == "POST" && r.path == "/api/login") return login(r, out)
         // Tela de senha: só o nome do aparelho, para saber em qual se está entrando.
         if (r.method == "GET" && r.path == "/api/hello") return json(out, 200, JSONObject().put("device", deviceName()).put("model", model()))
+        // "Instalar o app" (atalho/janela própria no navegador): manifesto e ícone do Index.
+        if (r.method == "GET" && r.path == "/manifest.webmanifest") return manifest(out)
+        if (r.method == "GET" && (r.path == "/icon-192.png" || r.path == "/icon-512.png")) return icon(out, if (r.path == "/icon-192.png") 192 else 512)
 
         val token = r.cookie(COOKIE)
-        val authed = token != null && sessions[token]?.let { System.currentTimeMillis() - it < SESSION_MS } == true
+        val authed = token != null && (sessions[token]?.let { System.currentTimeMillis() - it < SESSION_MS } == true || remembered(token))
         if (!authed) {
             r.skipRest()
             return json(out, 401, JSONObject().put("error", "login"))
@@ -334,6 +338,7 @@ class WebServer(
             "POST" to "/api/logout" -> {
                 r.skipRest()
                 sessions.remove(token)
+                forget(token)
                 json(out, 200, JSONObject().put("ok", true), listOf("Set-Cookie" to "$COOKIE=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"))
             }
             else -> throw HttpError(404, "não encontrado")
@@ -357,7 +362,8 @@ class WebServer(
     }
 
     private fun login(r: Req, out: OutputStream): Sent {
-        val pw = r.json().optString("password").toCharArray()
+        val body = r.json()
+        val pw = body.optString("password").toCharArray()
         val wait = checkPassword(pw)
         if (wait != 0L) {
             val o = JSONObject().put("error", if (wait > 0) "wait" else "wrong")
@@ -366,7 +372,66 @@ class WebServer(
         }
         val t = ByteArray(32).also { rnd.nextBytes(it) }.joinToString("") { "%02x".format(it) }
         sessions[t] = System.currentTimeMillis()
-        return json(out, 200, JSONObject().put("ok", true), listOf("Set-Cookie" to "$COOKIE=$t; Path=/; HttpOnly; SameSite=Strict"))
+        // "Salvar senha neste navegador": o cookie dura 90 dias e vale depois de religar o IndexWeb.
+        // Guardado só o hash do token; sair ou trocar a senha no app apaga.
+        val keep = body.optBoolean("remember")
+        if (keep) remember(t)
+        val age = if (keep) "; Max-Age=${REMEMBER_MS / 1000}" else ""
+        return json(out, 200, JSONObject().put("ok", true), listOf("Set-Cookie" to "$COOKIE=$t; Path=/$age; HttpOnly; SameSite=Strict"))
+    }
+
+    private fun rememberPrefs() = app.getSharedPreferences(REMEMBER_PREFS, Context.MODE_PRIVATE)
+
+    private fun tokenHash(t: String): String =
+        java.security.MessageDigest.getInstance("SHA-256").digest(t.toByteArray()).joinToString("") { "%02x".format(it) }
+
+    private fun remember(t: String) {
+        val now = System.currentTimeMillis()
+        val sp = rememberPrefs()
+        val e = sp.edit()
+        // Limpa os vencidos.
+        for ((k, v) in sp.all) if ((v as? Long ?: 0L) < now) e.remove(k)
+        e.putLong(tokenHash(t), now + REMEMBER_MS).apply()
+    }
+
+    private fun remembered(t: String): Boolean {
+        val until = rememberPrefs().getLong(tokenHash(t), 0L)
+        if (until < System.currentTimeMillis()) return false
+        sessions[t] = System.currentTimeMillis()
+        return true
+    }
+
+    private fun forget(t: String) {
+        rememberPrefs().edit().remove(tokenHash(t)).apply()
+    }
+
+    private fun manifest(out: OutputStream): Sent {
+        val o = JSONObject()
+            .put("name", "Index · ${deviceName()}")
+            .put("short_name", "Index")
+            .put("start_url", "/")
+            .put("scope", "/")
+            .put("display", "standalone")
+            .put("background_color", "#f6f6f4")
+            .put("theme_color", "#5b4fd6")
+            .put("icons", JSONArray()
+                .put(JSONObject().put("src", "/icon-192.png").put("sizes", "192x192").put("type", "image/png"))
+                .put(JSONObject().put("src", "/icon-512.png").put("sizes", "512x512").put("type", "image/png")))
+        return bytes(out, 200, "application/manifest+json", o.toString().toByteArray())
+    }
+
+    private val icons = ConcurrentHashMap<Int, ByteArray>()
+
+    /** Ícone do app (o mesmo da tela inicial do Android) em PNG. */
+    private fun icon(out: OutputStream, px: Int): Sent {
+        val b = icons.getOrPut(px) {
+            val d = androidx.core.content.ContextCompat.getDrawable(app, R.drawable.ic_launcher) ?: throw HttpError(404, "ícone")
+            val bmp = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
+            d.setBounds(0, 0, px, px)
+            d.draw(android.graphics.Canvas(bmp))
+            java.io.ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.PNG, 100, it); bmp.recycle() }.toByteArray()
+        }
+        return bytes(out, 200, "image/png", b, listOf("Cache-Control" to "max-age=86400"))
     }
 
     // ---------------------------------------------------------------- volumes e caminhos
@@ -600,13 +665,15 @@ class WebServer(
     /** Todos os arquivos de um tipo, mais novos primeiro (até 1000). */
     private fun kind(r: Req, out: OutputStream): Sent {
         val k = r.q("k") ?: throw HttpError(400, "tipo")
+        // "recent" = Recentes: os mais novos de qualquer tipo (até 300).
+        val max = if (k == "recent") 300 else 1000
         val arr = JSONArray()
         val roots = roots()
-        for ((vi, m) in indexed(k)) {
+        for ((vi, m) in indexed(k.takeIf { it != "recent" })) {
             arr.put(mediaJson(roots, vi, m))
-            if (arr.length() >= 1000) break
+            if (arr.length() >= max) break
         }
-        return json(out, 200, JSONObject().put("entries", arr).put("truncated", arr.length() >= 1000))
+        return json(out, 200, JSONObject().put("entries", arr).put("truncated", arr.length() >= max))
     }
 
     private fun mimeOf(name: String): String {
@@ -930,6 +997,8 @@ class WebServer(
     companion object {
         private const val TAG = "Index.Web"
         private const val COOKIE = "index_s"
+        private const val REMEMBER_PREFS = "web_remember"
+        private const val REMEMBER_MS = 90L * 24 * 60 * 60 * 1000
         private const val MAX_CONN = 48
         private const val SESSION_MS = 12 * 60 * 60 * 1000L
     }

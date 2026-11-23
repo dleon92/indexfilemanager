@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.23.0 (`dist/index-v0.23.0-fase13.apk`, botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.24.0 (`dist/index-v0.24.0-fase13.apk`, IndexWeb com senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -768,6 +768,23 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   IndexWeb, que pede o que falta e liga. Segurar abre a tela do IndexWeb.
 - Testado no Tab S7+ (chave ligou e desligou o servidor; segurar abriu a tela); instalado no S23.
 
+### Senha salva, instalar como app e Locais (v0.24.0)
+
+- Tela de senha com "Salvar senha neste navegador": o cookie passa a durar 90 dias e vale
+  depois de religar o IndexWeb. O celular guarda só o SHA-256 do token (preferências
+  `web_remember`); Sair apaga aquele, trocar a senha no app apaga todos, redefinir o app também.
+- "Instalar como app": `/manifest.webmanifest` e `/icon-192.png`/`/icon-512.png` (o ícone do app
+  desenhado em PNG), sem login. No primeiro login a página pergunta se quer instalar; depois fica
+  em ⋯, no menu lateral e no Ctrl+K. Em `http` da rede local o navegador não oferece o botão de
+  instalar sozinho, então a página mostra os passos do menu de cada navegador (Chrome, Edge,
+  Firefox, Android, Samsung Internet, iPhone/iPad). Aberta pelo IP, sugere instalar por
+  `index.local`.
+- A seção "Armazenamento" da coluna de pastas virou "Locais": Recentes (300 arquivos mais novos
+  do aparelho, pelo MediaStore, `/api/kind?k=recent`), DCIM/Camera, Downloads, Memória interna e
+  Cartão SD (com espaço livre). A árvore continua embaixo.
+- Testado no navegador; no Tab S7+, manifesto e ícone respondem sem login e o resto pede login.
+  Instalado no S23 e no Tab S7+.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -778,7 +795,7 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 a v0.23.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.24.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -830,3 +847,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.21.0-fase13 (IndexWeb no celular e no tablet) | 1.725.084 bytes (1.684 KB) | — |
 | v0.22.0-fase13 (IndexWeb com 6 layouts, desligar fecha conexões) | 1.742.872 bytes (1.702 KB) | — |
 | v0.23.0-fase13 (botões flutuantes Recentes, Downloads e IndexWeb) | 1.749.404 bytes (1.708 KB) | — |
+| v0.24.0-fase13 (IndexWeb: senha salva, instalar como app, Locais) | 1.752.336 bytes (1.711 KB) | — |

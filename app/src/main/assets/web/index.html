@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Index</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#5b4fd6">
 <style>
 :root{--bg:#f6f6f4;--panel:#fff;--line:#e3e3df;--text:#1d1d1b;--muted:#6b6b66;--accent:#5b4fd6;--accent-soft:#ece9ff;--danger:#c0392b;--sel:#e7e4ff;--hover:#f0f0ec;--on-accent:#fff;--chip:#1d1d1b;--chip-on:#fff}
 @media (prefers-color-scheme:dark){:root{--bg:#141416;--panel:#1c1c1f;--line:#2c2c31;--text:#e9e9ec;--muted:#9a9aa2;--accent:#9d93ff;--accent-soft:#2a2741;--danger:#ff7b6b;--sel:#2c2850;--hover:#232327;--on-accent:#141416;--chip:#e9e9ec;--chip-on:#141416}}
@@ -49,6 +53,15 @@ svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 #login .devbox{display:flex;align-items:center;gap:10px;background:var(--accent-soft);border-radius:8px;padding:10px 12px}
 #login .devbox b{display:block}
 #login .devbox small{color:var(--muted)}
+#login .rem{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+#login .rem input{margin:0}
+#login .remhint{font-size:12px;color:var(--muted);margin-top:-6px}
+.vol{display:flex;align-items:center;gap:8px}
+.vol>svg.i{color:var(--muted)}
+.vol .vb2{flex:1;min-width:0}
+.vol .vb2>div:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vol.on>svg.i{color:var(--accent)}
+.steps{margin:0;padding-left:20px;line-height:1.6}
 #login .err{color:var(--danger);min-height:1.4em;font-size:13px}
 
 /* ---------- sem conexão */
@@ -464,6 +477,8 @@ body.drawer #scrim{display:block}
     <div class="devbox" id="ldev"><svg class="i" viewBox="0 0 24 24"><path d="M8 3h8v18H8zM11 18h2"/></svg><div><b>Procurando o aparelho…</b><small>&nbsp;</small></div></div>
     <div class="muted">Digite a senha definida no app (IndexWeb).</div>
     <input id="pw" type="password" placeholder="Senha" autofocus>
+    <label class="rem"><input type="checkbox" id="rem"> Salvar senha neste navegador</label>
+    <div class="remhint">Não pede a senha de novo aqui até você clicar em Sair ou trocar a senha no app.</div>
     <button class="primary" type="submit">Entrar</button>
     <div class="err" id="lerr"></div>
   </form>
@@ -472,10 +487,10 @@ body.drawer #scrim{display:block}
 <div id="app" class="hidden"></div>
 <div id="drawer" aria-label="Armazenamento e pastas">
   <div class="dh"><b>Index</b><button class="ib ghost" data-act="drawer" title="Fechar">✕</button></div>
-  <h3>Armazenamento</h3><div class="vols"></div>
+  <h3>Locais</h3><div class="vols"></div>
   <h3>Pastas</h3><div class="tree"></div>
   <h3>Aparelho</h3><div class="info devinfo"></div>
-  <div class="foot"><button data-act="layout">Trocar layout</button><button data-act="logout">Sair</button></div>
+  <div class="foot"><button data-act="layout">Trocar layout</button><button data-act="install">Instalar como app</button><button data-act="logout">Sair</button></div>
 </div>
 <div id="scrim"></div>
 <div id="drop" class="hidden">Solte para enviar para esta pasta</div>
@@ -492,7 +507,7 @@ const load=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch(
 const store=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-const P={folder:"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",search:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5",up:"M12 16V4M6 10l6-6 6 6M4 20h16",down:"M12 4v12M6 10l6 6 6-6M4 20h16",trash:"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",move:"M5 12h14M13 6l6 6-6 6",copy:"M8 8h11v11H8zM5 16V5h11",x:"M6 6l12 12M18 6L6 18",menu:"M4 7h16M4 12h16M4 17h16",back:"M15 6l-6 6 6 6",chev:"M9 6l6 6-6 6",more:"M5 12h.01M12 12h.01M19 12h.01",img:"M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4",vid:"M4 6h12v12H4zM16 10l4-2v8l-4-2",doc:"M6 3h8l4 4v14H6zM14 3v4h4",music:"M9 18V6l10-2v12M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0",check:"M5 12l5 5 9-10",edit:"M4 20h4L19 9l-4-4L4 16z",home:"M4 11l8-7 8 7v9H4z",phone:"M8 3h8v18H8zM11 18h2",zip:"M6 3h12v18H6zM12 3v2M12 7v2M12 11v2",apk:"M7 10h10v8H7zM9 10V7a3 3 0 0 1 6 0v3",layout:"M4 4h16v16H4zM4 10h16M10 10v10",arrowUp:"M12 19V5M6 11l6-6 6 6",plus:"M12 5v14M5 12h14",refresh:"M20 11a8 8 0 1 0-2 5.3M20 5v6h-6",logout:"M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",cmd:"M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"};
+const P={folder:"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",search:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5",up:"M12 16V4M6 10l6-6 6 6M4 20h16",down:"M12 4v12M6 10l6 6 6-6M4 20h16",trash:"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",move:"M5 12h14M13 6l6 6-6 6",copy:"M8 8h11v11H8zM5 16V5h11",x:"M6 6l12 12M18 6L6 18",menu:"M4 7h16M4 12h16M4 17h16",back:"M15 6l-6 6 6 6",chev:"M9 6l6 6-6 6",more:"M5 12h.01M12 12h.01M19 12h.01",img:"M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4",vid:"M4 6h12v12H4zM16 10l4-2v8l-4-2",doc:"M6 3h8l4 4v14H6zM14 3v4h4",music:"M9 18V6l10-2v12M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0",check:"M5 12l5 5 9-10",edit:"M4 20h4L19 9l-4-4L4 16z",home:"M4 11l8-7 8 7v9H4z",phone:"M8 3h8v18H8zM11 18h2",zip:"M6 3h12v18H6zM12 3v2M12 7v2M12 11v2",apk:"M7 10h10v8H7zM9 10V7a3 3 0 0 1 6 0v3",layout:"M4 4h16v16H4zM4 10h16M10 10v10",arrowUp:"M12 19V5M6 11l6-6 6 6",plus:"M12 5v14M5 12h14",refresh:"M20 11a8 8 0 1 0-2 5.3M20 5v6h-6",logout:"M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",clock:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",camera:"M4 8h3l2-3h6l2 3h3v11H4zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7",sd:"M7 3h8l4 4v14H7zM10 3v4M13 3v4",install:"M12 3v10M8 9l4 4 4-4M5 15v4h14v-4",cmd:"M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"};
 const ic=n=>`<svg class="i" viewBox="0 0 24 24"><path d="${P[n]}"/></svg>`;
 const icEl=n=>{const s=el("span");s.innerHTML=ic(n);return s.firstChild};
 
@@ -554,14 +569,14 @@ async function showLogin(){
 }
 $("#lf").addEventListener("submit",async e=>{
   e.preventDefault();$("#lerr").textContent="";
-  let r;try{r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("#pw").value})})}catch(x){$("#lerr").textContent="Sem conexão com o aparelho.";return}
+  let r;try{r=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("#pw").value,remember:$("#rem").checked})})}catch(x){$("#lerr").textContent="Sem conexão com o aparelho.";return}
   const j=await r.json().catch(()=>({}));
-  if(r.ok){$("#pw").value="";start();return}
+  if(r.ok){$("#pw").value="";start(true);return}
   $("#lerr").textContent=j.error==="wait"?`Muitas tentativas. Espere ${Math.ceil(j.wait/60)} min.`:"Senha errada.";
 });
 
 // ---------- início
-async function start(){
+async function start(fromLogin){
   try{await loadInfo()}catch(e){if(e.message!=="login")toast(e.message);return}
   $("#login").classList.add("hidden");$("#app").classList.remove("hidden");
   buildApp();
@@ -569,6 +584,7 @@ async function start(){
   if(h){const m=h.match(/^(\d+)(\/.*)?$/);if(m&&S.vols[+m[1]]){S.v=+m[1];S.path=decodeURIComponent(m[2]||"/")}}
   await go(S.path,true,true);
   if(S.layout==="duplo")initOther();
+  if(fromLogin&&load("idx.installAsked","")!=="1"&&!standalone())setTimeout(()=>installDlg(),700);
 }
 async function loadInfo(){
   const j=await api("GET","/api/info");
@@ -672,11 +688,25 @@ function renderItems(box){
 }
 
 // ---------- peças comuns
+function places(){
+  const prim=S.vols.find(v=>!v.removable)||S.vols[0],pi=prim?prim.i:0;
+  const at=(v,p)=>!S.search&&S.v===v&&S.path===p;
+  const out=[
+    {label:"Recentes",icon:"clock",on:!!S.search&&S.searchLabel.startsWith("tipo:Recentes"),fn:()=>loadKind("recent")},
+    {label:"DCIM/Camera",icon:"camera",on:at(pi,"/DCIM/Camera"),fn:()=>{S.v=pi;go("/DCIM/Camera")}},
+    {label:"Downloads",icon:"down",on:at(pi,"/Download"),fn:()=>{S.v=pi;go("/Download")}},
+  ];
+  if(prim)out.push({label:"Memória interna",icon:"phone",vol:prim,on:at(pi,"/"),fn:()=>{S.v=pi;go("/")}});
+  const sds=S.vols.filter(v=>v.removable);
+  sds.forEach(v=>out.push({label:sds.length>1?v.name:"Cartão SD",icon:"sd",vol:v,on:at(v.i,"/"),fn:()=>{S.v=v.i;go("/")}}));
+  return out;
+}
 function renderVols(){
-  $$(".vols").forEach(box=>{box.innerHTML="";S.vols.forEach(v=>{
-    const used=v.total?(v.total-v.free)/v.total*100:0;
-    box.append(el("div",{class:"vol"+(v.i===S.v?" on":""),onclick:()=>{S.v=v.i;go("/")}},
-      el("div",{},v.name),el("div",{class:"bar"},el("i",{style:`width:${used.toFixed(1)}%`})),el("small",{},`${fmtSize(v.free)} livres de ${fmtSize(v.total)}`)));
+  $$(".vols").forEach(box=>{box.innerHTML="";places().forEach(pl=>{
+    const body=el("div",{class:"vb2"},el("div",{},pl.label));
+    if(pl.vol){const v=pl.vol,used=v.total?(v.total-v.free)/v.total*100:0;
+      body.append(el("div",{class:"bar"},el("i",{style:`width:${used.toFixed(1)}%`})),el("small",{},`${fmtSize(v.free)} livres de ${fmtSize(v.total)}`))}
+    box.append(el("div",{class:"vol"+(pl.on?" on":""),title:pl.label,onclick:()=>{document.body.classList.remove("drawer");pl.fn()}},icEl(pl.icon),body));
   })});
 }
 function renderTree(){
@@ -775,6 +805,7 @@ const ACT={
   kind(b){S.kind=b.dataset.kind;S.sel.clear();render()},
   drawer(){document.body.classList.toggle("drawer")},
   layout(){chooseLayout()},
+  install(){installDlg()},
   async logout(){try{await api("POST","/api/logout")}catch(e){}showLogin()},
   more(){moreMenu()},
   device(){deviceDlg()},
@@ -828,7 +859,7 @@ async function doSearch(t){t=(t||"").trim();if(!t){clearSearch();return}
   if(S.layout==="inicio"&&S.home){S.home=false;if(S.path!=="/")await go("/",false)}
   $$(".st1").forEach(x=>x.textContent="Buscando…");
   try{const j=await api("GET","/api/search?"+q({v:S.v,p:S.path,q:t}));S.search=j.entries;S.searchLabel=`busca: “${t}”`;S.sel.clear();render();$$(".qin").forEach(i=>{if(document.activeElement!==i)i.value=t});if(j.truncated)toast("Mostrando os primeiros 500 resultados.")}catch(e){toast(e.message)}}
-const KIND_LABEL={img:"Fotos",vid:"Vídeos",aud:"Áudio",doc:"Documentos",zip:"Compactados",apk:"Apps (APK)"};
+const KIND_LABEL={recent:"Recentes",img:"Fotos",vid:"Vídeos",aud:"Áudio",doc:"Documentos",zip:"Compactados",apk:"Apps (APK)"};
 async function loadKind(k){
   toast("Carregando "+KIND_LABEL[k].toLowerCase()+"…");
   try{const j=await api("GET","/api/kind?"+q({k}));S.home=false;S.search=j.entries;S.searchLabel="tipo:"+KIND_LABEL[k]+` (${j.entries.length}${j.truncated?"+":""})`;S.sel.clear();S.kind="all";render()}catch(e){toast(e.message)}
@@ -854,7 +885,7 @@ const selbarMarkup=()=>`<div class="selbar"><b class="selN"></b><button data-act
 const LAY={
   classico:{
     build:()=>`<header><button class="ib mob" data-act="drawer" title="Pastas">${ic("menu")}</button><span class="brand">Index</span><span class="dev muted devname"></span><span class="sp"></span><span class="bat muted"></span><button data-act="layout" title="Trocar layout">${ic("layout")}<span class="hide-m">Layout</span></button><button data-act="logout">Sair</button></header>
-      <aside class="side"><h3>Armazenamento</h3><div class="vols"></div><h3>Pastas</h3><div class="tree"></div><h3>Aparelho</h3><div class="info devinfo"></div></aside>
+      <aside class="side"><h3>Locais</h3><div class="vols"></div><h3>Pastas</h3><div class="tree"></div><h3>Aparelho</h3><div class="info devinfo"></div></aside>
       <main class="browse">${browseMarkup()}</main>`,
     render(){renderItems($(".items"))}
   },
@@ -893,7 +924,7 @@ const LAY={
     build:()=>`<div class="co-tb"><button class="ib ghost mob" data-act="drawer" title="Pastas">${ic("menu")}</button><button class="ib ghost hide-m" data-act="back" title="Voltar">${ic("back")}</button><button class="ib ghost" data-act="up" title="Pasta acima">${ic("arrowUp")}</button><b class="co-title"></b><span class="sp"></span>
         <label class="co-search">${ic("search")}<input type="search" class="qin" placeholder="Buscar nesta pasta"></label>
         <button class="hide-m" data-act="mkdir">${ic("plus")}Nova pasta</button><button class="primary" data-act="upload">${ic("up")}<span class="hide-m">Enviar</span></button><button class="ib" data-act="more" title="Mais">${ic("more")}</button></div>
-      <div class="co-main"><aside class="co-side"><h3>Armazenamento</h3><div class="vols"></div><h3>Aparelho</h3><div class="info devinfo"></div></aside><div class="co-cols items"></div><section class="co-pv"></section></div>
+      <div class="co-main"><aside class="co-side"><h3>Locais</h3><div class="vols"></div><h3>Aparelho</h3><div class="info devinfo"></div></aside><div class="co-cols items"></div><section class="co-pv"></section></div>
       <div class="status"><span class="st1"></span><span class="st2"></span></div>`,
     render(){
       const cols=$(".co-cols");cols.innerHTML="";
@@ -1065,7 +1096,7 @@ function moreMenu(){menuDlg("Mais opções",[
   {label:"Mostrar arquivos ocultos",icon:"doc",act:"hidden",check:S.hidden},
   ["classico","inicio"].includes(S.layout)?{label:S.view==="list"?"Ver em miniaturas":"Ver em lista",icon:"img",fn:()=>{S.view=S.view==="list"?"grid":"list";store("idx.view",S.view);render()}}:null,
   touch()?null:{label:"Comandos (Ctrl+K)",icon:"cmd",act:"cmd"},
-  {label:"Aparelho",icon:"phone",act:"device"},{label:"Trocar layout",icon:"layout",act:"layout"},{label:"Sair",icon:"logout",act:"logout"}])}
+  {label:"Aparelho",icon:"phone",act:"device"},{label:"Trocar layout",icon:"layout",act:"layout"},{label:"Instalar como app",icon:"install",act:"install"},{label:"Sair",icon:"logout",act:"logout"}])}
 function itemMenu(e){const k=keyOf(e);menuDlg(e.n,[
   {label:e.d?"Abrir pasta":"Abrir",icon:e.d?"folder":"img",fn:()=>openItem(e,visible())},
   {label:"Baixar",icon:"down",act:"download"},{label:"Renomear",icon:"edit",act:"rename"},{label:"Mover",icon:"move",act:"move"},{label:"Copiar",icon:"copy",act:"copy"},
@@ -1078,11 +1109,40 @@ function chooseLayout(){document.body.classList.remove("drawer");modal(close=>{
   return el("div",{class:"dlg wide"},el("h2",{},"Layout do IndexWeb"),el("div",{class:"muted",style:"font-size:13px"},"Fica salvo neste navegador: cada computador, tablet ou celular pode usar um diferente."),g,el("div",{class:"btns"},el("button",{onclick:()=>close(null)},"Fechar")));
 })}
 
+// ---------- instalar como app (atalho que abre numa janela própria)
+let deferredInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e});
+function standalone(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
+function installSteps(){
+  const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),android=/Android/.test(ua);
+  if(ios)return ["No Safari, toque em Compartilhar (o quadrado com a seta para cima).","Toque em “Adicionar à Tela de Início” e em Adicionar."];
+  if(android&&/SamsungBrowser/.test(ua))return ["Toque em ☰ (menu, embaixo).","Toque em “Adicionar página a” › “Tela inicial”."];
+  if(android)return ["Toque em ⋮ (menu, no canto de cima).","Toque em “Adicionar à tela inicial” e confirme (Instalar ou Criar atalho)."];
+  if(/Firefox\//.test(ua))return ["O Firefox não instala sites como app.","Guarde nos favoritos (Ctrl+D) ou abra este endereço no Chrome ou no Edge para instalar."];
+  if(/Edg\//.test(ua))return ["Clique em ⋯ (menu, no canto de cima).","Vá em “Aplicativos” › “Instalar este site como aplicativo”. Se não aparecer, use “Mais ferramentas” › “Fixar na barra de tarefas”."];
+  return ["Clique em ⋮ (menu, no canto de cima).","Vá em “Transmitir, salvar e compartilhar” › “Criar atalho…”.","Marque “Abrir como janela” e clique em Criar."];
+}
+async function installDlg(){
+  store("idx.installAsked","1");
+  if(standalone()){toast("O Index já está aberto como app.");return}
+  const ip=/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname),fixed=`http://index.local${location.port?":"+location.port:""}/`;
+  const go2=await modal(close=>el("div",{class:"dlg"},el("h2",{},"Instalar o Index como app?"),
+    el("div",{},"Cria um atalho que abre o Index numa janela própria, sem a barra de endereço, como um aplicativo do computador ou do celular."),
+    ip?el("div",{class:"muted",style:"font-size:13px"},"Dica: este endereço é o IP do aparelho, que pode mudar quando o roteador reinicia. Se ",el("a",{href:fixed},fixed)," abrir aqui, instale a partir dele."):null,
+    el("div",{class:"btns"},el("button",{onclick:()=>close(false)},"Agora não"),el("button",{class:"primary",onclick:()=>close(true)},"Instalar"))));
+  if(!go2)return;
+  if(deferredInstall){const d=deferredInstall;deferredInstall=null;try{await d.prompt();await d.userChoice}catch(e){}return}
+  modal(close=>el("div",{class:"dlg"},el("h2",{},"Como instalar"),
+    el("ol",{class:"steps"},...installSteps().map(t=>el("li",{},t))),
+    el("div",{class:"muted",style:"font-size:12px"},"Como o endereço é da rede de casa (sem https), o navegador não mostra o botão de instalar sozinho; o atalho é criado pelo menu dele."),
+    el("div",{class:"btns"},el("button",{class:"primary",onclick:()=>close(null)},"Entendi"))));
+}
+
 // ---------- paleta de comandos
 const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
 function paletteItems(t){
   const out=[];const n=norm(t.trim());
-  const A=[["Enviar arquivos","upload","up"],["Enviar pasta","uploadDir","up"],["Nova pasta","mkdir","plus"],["Baixar selecionados","download","down"],["Renomear","rename","edit","F2"],["Mover selecionados para…","move","move"],["Copiar selecionados para…","copy","copy"],["Apagar selecionados","remove","trash","Del"],["Selecionar tudo","selAll","check","Ctrl A"],["Limpar seleção","clear","x","Esc"],["Atualizar","refresh","refresh","F5"],[S.hidden?"Esconder arquivos ocultos":"Mostrar arquivos ocultos","hidden","doc"],["Pasta acima","up","arrowUp","⌫"],["Trocar layout","layout","layout"],["Sair","logout","logout"]];
+  const A=[["Enviar arquivos","upload","up"],["Enviar pasta","uploadDir","up"],["Nova pasta","mkdir","plus"],["Baixar selecionados","download","down"],["Renomear","rename","edit","F2"],["Mover selecionados para…","move","move"],["Copiar selecionados para…","copy","copy"],["Apagar selecionados","remove","trash","Del"],["Selecionar tudo","selAll","check","Ctrl A"],["Limpar seleção","clear","x","Esc"],["Atualizar","refresh","refresh","F5"],[S.hidden?"Esconder arquivos ocultos":"Mostrar arquivos ocultos","hidden","doc"],["Pasta acima","up","arrowUp","⌫"],["Trocar layout","layout","layout"],["Instalar como app","install","install"],["Sair","logout","logout"]];
   if(S.layout==="duplo")A.unshift(["Copiar para o outro painel","toOther","copy","F5"],["Mover para o outro painel","mvOther","move","F6"]);
   if(S.layout==="inicio")A.unshift(["Ir para o início","home","home"]);
   if(n)out.push({grp:"Buscar",label:`Buscar “${t.trim()}” nesta pasta e subpastas`,icon:"search",fn:()=>doSearch(t)});

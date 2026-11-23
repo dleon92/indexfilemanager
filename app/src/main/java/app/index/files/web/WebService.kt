@@ -215,6 +215,8 @@ class WebService : Service() {
             synchronized(this) {
                 Prefs.get(ctx).webPassword = rec.toJson().toString()
                 cached = null
+                // Senha nova: os navegadores com a senha salva precisam entrar de novo.
+                ctx.getSharedPreferences("web_remember", Context.MODE_PRIVATE).edit().clear().apply()
             }
         }
 
