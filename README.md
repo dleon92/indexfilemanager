@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.24.0 (`dist/index-v0.24.0-fase13.apk`, IndexWeb com senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.25.0 (`dist/index-v0.25.0-fase13.apk`, IndexWeb abre arquivos em nova aba, avisa antes de sair no meio de uma transferência, explica as falhas com "Tentar de novo" e pergunta se desliga ao fim do envio; senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -785,6 +785,22 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 - Testado no navegador; no Tab S7+, manifesto e ícone respondem sem login e o resto pede login.
   Instalado no S23 e no Tab S7+.
 
+### Nova aba, aviso ao sair, falhas explicadas e desligar ao fim (v0.25.0)
+
+- EF10: abrir um arquivo leva a uma nova aba do navegador (`window.open`, `noopener`); o que o
+  navegador não mostra é baixado. Sai o visualizador dentro da página.
+- EF12: com envio, cópia, movimentação ou exclusão em andamento, o navegador pede confirmação
+  ao fechar, recarregar ou voltar (`beforeunload`); Sair e Desligar também confirmam. O
+  desligamento por inatividade já não ocorria durante transferências.
+- EF13: o painel de envio mostra "Enviados X de Y", o motivo de cada falha (sem espaço, conexão
+  perdida, nome inválido, sessão expirada) e "Tentar de novo (n)" só com os que falharam.
+  `/api/transfer` e `/api/delete` devolvem `why` (motivo por item); a página lista os que falharam
+  e tenta de novo só esses.
+- EF14 (em parte): envio concluído sem falhas pergunta "Nada" ou "Desligar o IndexWeb" (dá para
+  não perguntar mais). `POST /api/shutdown` (com login) responde e para o serviço; também em ⋯ e
+  no Ctrl+K. Desligar o computador precisa de um programa auxiliar no PC e ficou para depois.
+- Testado no navegador com servidor de teste; instalado no Tab S7+.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -795,7 +811,7 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 a v0.24.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.25.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -848,3 +864,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.22.0-fase13 (IndexWeb com 6 layouts, desligar fecha conexões) | 1.742.872 bytes (1.702 KB) | — |
 | v0.23.0-fase13 (botões flutuantes Recentes, Downloads e IndexWeb) | 1.749.404 bytes (1.708 KB) | — |
 | v0.24.0-fase13 (IndexWeb: senha salva, instalar como app, Locais) | 1.752.336 bytes (1.711 KB) | — |
+| v0.25.0-fase13 (IndexWeb: nova aba, aviso ao sair, falhas explicadas, desligar ao fim) | 1.753.576 bytes (1.712 KB) | — |

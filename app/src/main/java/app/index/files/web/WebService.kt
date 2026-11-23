@@ -56,7 +56,10 @@ class WebService : Service() {
         }
         ServiceCompat.startForeground(this, NOTIF_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         if (server == null) {
-            val s = WebServer(applicationContext, ::checkPassword) { lastActivity = SystemClock.elapsedRealtime() }
+            val s = WebServer(applicationContext, ::checkPassword, {
+                // A página pediu para desligar: dá tempo da resposta sair e para o serviço.
+                Bg.main.postDelayed({ Log.i(TAG, "desligado pela página"); stopSelf() }, 400)
+            }) { lastActivity = SystemClock.elapsedRealtime() }
             try {
                 port = s.start(Prefs.get(this).webPort)
                 server = s

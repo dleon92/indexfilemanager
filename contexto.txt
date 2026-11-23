@@ -380,6 +380,11 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   (manifesto e ícone; em http o atalho é criado pelo menu do navegador, a página mostra os passos)
   e "Locais" na coluna de pastas: Recentes, DCIM/Camera, Downloads, Memória interna e Cartão SD.
   Instalado no S23 e no Tab S7+.
+- Extra pós-entrega (v0.25.0): IndexWeb abre arquivos numa nova aba (EF10), pede confirmação
+  ao sair da página com transferência em andamento (EF12), diz o motivo de cada falha de envio,
+  cópia, movimentação ou exclusão com "Tentar de novo" só nos que falharam (EF13) e, ao fim de
+  um envio, pergunta se desliga o IndexWeb (EF14 em parte; desligar o PC fica para depois).
+  Instalado no Tab S7+.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

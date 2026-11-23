@@ -165,6 +165,12 @@ body.drawer #scrim{display:block}
 #ups .pb{height:4px;background:var(--line);border-radius:2px;margin-top:4px;overflow:hidden}
 #ups .pb i{display:block;height:100%;background:var(--accent);width:0}
 #ups .it.err .nm{color:var(--danger)}
+#ups .it.err .pb i{background:var(--danger)}
+#ups .it .why{color:var(--danger);font-size:12px}
+#ups .sum{padding:6px 12px;border-bottom:1px solid var(--line);color:var(--danger)}
+ul.fails{margin:0;padding-left:20px;max-height:40vh;overflow:auto;line-height:1.5;word-break:break-word}
+.dlg label.nochk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
+.dlg label.nochk input{margin:0;width:auto;flex:none}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:35;padding:12px}
 .dlg{background:var(--panel);color:var(--text);border-radius:12px;padding:20px;width:min(440px,94vw);display:flex;flex-direction:column;gap:12px;max-height:88vh;overflow:auto}
 .dlg h2{margin:0;font-size:16px}
@@ -181,14 +187,6 @@ body.drawer #scrim{display:block}
 .lays button.on{border-color:var(--accent);background:var(--accent-soft)}
 .lays button .tag{font-size:11px;color:var(--accent);font-weight:600}
 .pick{border:1px solid var(--line);border-radius:6px;overflow:auto;min-height:220px;max-height:45vh;padding:4px}
-#pv{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:32;display:flex;flex-direction:column}
-#pv .top{display:flex;align-items:center;gap:8px;padding:10px 14px;color:#fff}
-#pv .top .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#pv .top button{background:rgba(255,255,255,.12);border-color:transparent;color:#fff}
-#pv .body{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:0 14px 14px}
-#pv img,#pv video{max-width:100%;max-height:100%}
-#pv iframe{width:100%;height:100%;border:0;background:#fff;border-radius:6px}
-#pv audio{width:min(600px,90vw)}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 16px;border-radius:8px;z-index:45;max-width:min(80vw,520px)}
 
 /* paleta de comandos (Ctrl+K) */
@@ -399,10 +397,6 @@ body.drawer #scrim{display:block}
   .grid{gap:8px;padding:8px}
   .status{padding:5px 10px;gap:10px}
   #ups{left:8px;right:8px;bottom:8px;width:auto}
-  #pv .top{flex-wrap:wrap;padding:8px 10px;gap:6px}
-  #pv .top .nm{order:-1;flex-basis:100%;font-size:13px}
-  #pv .top .x{margin-left:auto}
-  #pv .body{padding:0 6px 6px}
   .selbar{left:8px;right:8px;transform:translateY(180%);justify-content:space-between;padding:6px 6px 6px 14px}
   .has-sel .selbar{transform:none}
   .selbar .lbl{display:none}
@@ -494,8 +488,7 @@ body.drawer #scrim{display:block}
 </div>
 <div id="scrim"></div>
 <div id="drop" class="hidden">Solte para enviar para esta pasta</div>
-<div id="ups" class="hidden"><div class="hd"><b id="upt"></b><button id="upx">Fechar</button></div><div id="upl"></div></div>
-<div id="pv" class="hidden"><div class="top"><button id="pvPrev">‹ Anterior</button><button id="pvNext">Próximo ›</button><span class="nm" id="pvName"></span><button id="pvDl">Baixar</button><button id="pvClose" class="x" title="Fechar (Esc)">Fechar</button></div><div class="body" id="pvBody"></div></div>
+<div id="ups" class="hidden"><div class="hd"><b id="upt"></b><button id="upr" class="primary hidden">Tentar de novo</button><button id="upx">Fechar</button></div><div id="ups2" class="sum hidden"></div><div id="upl"></div></div>
 <input type="file" id="fFiles" multiple class="hidden">
 <input type="file" id="fDir" webkitdirectory multiple class="hidden">
 
@@ -507,7 +500,7 @@ const load=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch(
 const store=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-const P={folder:"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",search:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5",up:"M12 16V4M6 10l6-6 6 6M4 20h16",down:"M12 4v12M6 10l6 6 6-6M4 20h16",trash:"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",move:"M5 12h14M13 6l6 6-6 6",copy:"M8 8h11v11H8zM5 16V5h11",x:"M6 6l12 12M18 6L6 18",menu:"M4 7h16M4 12h16M4 17h16",back:"M15 6l-6 6 6 6",chev:"M9 6l6 6-6 6",more:"M5 12h.01M12 12h.01M19 12h.01",img:"M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4",vid:"M4 6h12v12H4zM16 10l4-2v8l-4-2",doc:"M6 3h8l4 4v14H6zM14 3v4h4",music:"M9 18V6l10-2v12M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0",check:"M5 12l5 5 9-10",edit:"M4 20h4L19 9l-4-4L4 16z",home:"M4 11l8-7 8 7v9H4z",phone:"M8 3h8v18H8zM11 18h2",zip:"M6 3h12v18H6zM12 3v2M12 7v2M12 11v2",apk:"M7 10h10v8H7zM9 10V7a3 3 0 0 1 6 0v3",layout:"M4 4h16v16H4zM4 10h16M10 10v10",arrowUp:"M12 19V5M6 11l6-6 6 6",plus:"M12 5v14M5 12h14",refresh:"M20 11a8 8 0 1 0-2 5.3M20 5v6h-6",logout:"M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",clock:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",camera:"M4 8h3l2-3h6l2 3h3v11H4zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7",sd:"M7 3h8l4 4v14H7zM10 3v4M13 3v4",install:"M12 3v10M8 9l4 4 4-4M5 15v4h14v-4",cmd:"M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"};
+const P={folder:"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",search:"M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM21 21l-5-5",up:"M12 16V4M6 10l6-6 6 6M4 20h16",down:"M12 4v12M6 10l6 6 6-6M4 20h16",trash:"M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",move:"M5 12h14M13 6l6 6-6 6",copy:"M8 8h11v11H8zM5 16V5h11",x:"M6 6l12 12M18 6L6 18",menu:"M4 7h16M4 12h16M4 17h16",back:"M15 6l-6 6 6 6",chev:"M9 6l6 6-6 6",more:"M5 12h.01M12 12h.01M19 12h.01",img:"M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4",vid:"M4 6h12v12H4zM16 10l4-2v8l-4-2",doc:"M6 3h8l4 4v14H6zM14 3v4h4",music:"M9 18V6l10-2v12M9 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM19 16a2 2 0 1 1-4 0 2 2 0 0 1 4 0",check:"M5 12l5 5 9-10",edit:"M4 20h4L19 9l-4-4L4 16z",home:"M4 11l8-7 8 7v9H4z",phone:"M8 3h8v18H8zM11 18h2",zip:"M6 3h12v18H6zM12 3v2M12 7v2M12 11v2",apk:"M7 10h10v8H7zM9 10V7a3 3 0 0 1 6 0v3",layout:"M4 4h16v16H4zM4 10h16M10 10v10",arrowUp:"M12 19V5M6 11l6-6 6 6",plus:"M12 5v14M5 12h14",refresh:"M20 11a8 8 0 1 0-2 5.3M20 5v6h-6",logout:"M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10",clock:"M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",camera:"M4 8h3l2-3h6l2 3h3v11H4zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7",sd:"M7 3h8l4 4v14H7zM10 3v4M13 3v4",install:"M12 3v10M8 9l4 4 4-4M5 15v4h14v-4",power:"M12 3v8M7.5 6.5a7 7 0 1 0 9 0",cmd:"M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3z"};
 const ic=n=>`<svg class="i" viewBox="0 0 24 24"><path d="${P[n]}"/></svg>`;
 const icEl=n=>{const s=el("span");s.innerHTML=ic(n);return s.firstChild};
 
@@ -544,8 +537,11 @@ const fileUrl=(e,dl)=>"/api/file?"+q({v:vOf(e),p:pathOf(e)})+(dl?"&dl=1":"");
 const zipUrl=e=>"/api/zip?"+q({v:vOf(e),p:pathOf(e)});
 const thumbUrl=(e,s)=>"/api/thumb?"+q({v:vOf(e),p:pathOf(e),s,t:e.m});
 
-let offline=false;
-function setOffline(on){if(on===offline)return;offline=on;$("#off").classList.toggle("hidden",!on)}
+let offline=false,isDown=false,BUSY=0;
+function setOffline(on){if(isDown)on=true;if(on===offline)return;offline=on;$("#off").classList.toggle("hidden",!on)}
+// Envio, cópia, movimentação ou apagar em andamento.
+const busyNow=()=>UP.active>0||UP.q.length>0||BUSY>0;
+window.addEventListener("beforeunload",e=>{if(busyNow()){e.preventDefault();e.returnValue=""}});
 $("#offRetry").onclick=()=>location.reload();
 async function api(method,url,body){
   let r;
@@ -641,7 +637,7 @@ function clickItem(ev,e,items){
 function holdItem(ev,e){if(!touch())return;ev.preventDefault();toggleSel(keyOf(e));if(navigator.vibrate)try{navigator.vibrate(15)}catch(x){}render()}
 function openItem(e,items){
   if(e.d){if(e.v!=null)S.v=e.v;go(pathOf(e));return}
-  preview(e,items.filter(x=>!x.d));
+  openFile(e);
 }
 function bindItem(node,e,items){
   node.addEventListener("click",ev=>clickItem(ev,e,items));
@@ -792,7 +788,7 @@ const ACT={
   async remove(){const s=selected();if(!s.length)return;
     const ok=await confirmDlg("Apagar",s.length===1?`Apagar “${s[0].n}”${s[0].d?" e tudo o que há dentro":""}? Não dá para desfazer.`:`Apagar ${s.length} itens (pastas com tudo o que há dentro)? Não dá para desfazer.`,"Apagar");
     if(!ok)return;
-    try{const j=await api("POST","/api/delete",{v:S.v,p:S.path,names:s.map(e=>e.n)});if(j.failed.length)toast(`${j.failed.length} item(ns) não puderam ser apagados.`);else toast(`${s.length} item(ns) apagados.`);go(S.path,true)}catch(e){toast(e.message)}},
+    runDelete({v:S.v,p:S.path,names:s.map(e=>e.n)},()=>go(S.path,true))},
   download(){downloadSel()},
   open(){const s=selected();if(s.length===1)openItem(s[0],visible())},
   move(){transfer(false)},copy(){transfer(true)},
@@ -806,7 +802,9 @@ const ACT={
   drawer(){document.body.classList.toggle("drawer")},
   layout(){chooseLayout()},
   install(){installDlg()},
-  async logout(){try{await api("POST","/api/logout")}catch(e){}showLogin()},
+  async logout(){if(busyNow()&&!await confirmDlg("Sair agora?","Ainda há arquivos sendo enviados ou copiados. Saindo, o que falta é cancelado.","Sair mesmo assim"))return;
+    try{await api("POST","/api/logout")}catch(e){}showLogin()},
+  async power(){if(!await confirmDlg("Desligar o IndexWeb?",busyNow()?"Ainda há arquivos sendo enviados ou copiados; desligando, o que falta é cancelado.":"Este navegador e os outros perdem o acesso até o IndexWeb ser ligado de novo no aparelho.","Desligar"))return;powerOff()},
   more(){moreMenu()},
   device(){deviceDlg()},
   cmd(){openPalette()},
@@ -846,8 +844,27 @@ function downloadMany(urls){let i=0;const next=()=>{if(i>=urls.length)return;dow
 async function transfer(copy){
   const s=selected();if(!s.length)return;
   const dest=await pickFolder(copy?"Copiar para":"Mover para");if(!dest)return;
-  try{const j=await api("POST","/api/transfer",{v:S.v,p:S.path,tv:dest.v,to:dest.p,names:s.map(e=>e.n),copy});
-    toast(`${j.done} item(ns) ${copy?"copiados":"movidos"}.`+(j.failed.length?` ${j.failed.length} falharam.`:""));go(S.path,true)}catch(e){toast(e.message)}
+  runTransfer({v:S.v,p:S.path,tv:dest.v,to:dest.p,names:s.map(e=>e.n),copy},"",()=>go(S.path,true));
+}
+// Lista o que falhou e por quê; true = tentar de novo só esses.
+function failDlg(title,j){const why=j.why||{},n=j.failed.length,max=12;
+  return modal(close=>el("div",{class:"dlg"},el("h2",{},title),
+    el("div",{},n===1?"Este item não deu certo:":`Estes ${n} itens não deram certo:`),
+    el("ul",{class:"fails"},...j.failed.slice(0,max).map(f=>el("li",{},el("b",{},f),why[f]?" — "+why[f]:"")),n>max?el("li",{class:"muted"},`e mais ${n-max}`):null),
+    el("div",{class:"btns"},el("button",{onclick:()=>close(false)},"Fechar"),el("button",{class:"primary",onclick:()=>close(true)},"Tentar de novo"))))}
+async function runTransfer(body,label,after){
+  const verb=body.copy?"copiados":"movidos";let j;
+  toast(body.copy?"Copiando…":"Movendo…");BUSY++;
+  try{j=await api("POST","/api/transfer",body)}catch(e){toast(e.message==="Sem conexão com o aparelho."?"Conexão perdida: confira na pasta o que já foi.":e.message);return}finally{BUSY--}
+  await after();
+  if(!j.failed.length){toast(`${j.done} de ${body.names.length} item(ns) ${verb}${label}.`);return}
+  if(await failDlg(`${j.done} de ${body.names.length} item(ns) ${verb}${label}`,j))runTransfer({...body,names:j.failed},label,after);
+}
+async function runDelete(body,after){let j;BUSY++;
+  try{j=await api("POST","/api/delete",body)}catch(e){toast(e.message);return}finally{BUSY--}
+  await after();
+  if(!j.failed.length){toast(`${body.names.length} item(ns) apagados.`);return}
+  if(await failDlg(`${body.names.length-j.failed.length} de ${body.names.length} item(ns) apagados`,j))runDelete({...body,names:j.failed},after);
 }
 function clearSearch(){S.search=null;S.searchLabel="";$$(".qin").forEach(i=>i.value="");render()}
 let qTimer;
@@ -1021,7 +1038,7 @@ const LAY={
       right.append(el("div",{class:"card"},el("h5",{},"Por tipo"),cats));
       const rec=(S.stats&&S.stats.recent)||[];
       const strip=el("div",{class:"pi-strip"});
-      rec.slice(0,narrow()?8:12).forEach(e=>{const t=el("div",{class:"gt",title:e.n+"  ·  "+e.p,onclick:()=>preview(e,rec)},ext(e.n),el("img",{loading:"lazy",alt:"",src:thumbUrl(e,192),onerror:function(){this.remove()}}));if(VID.test(e.n))t.append(el("span",{class:"vb"},"▶"));strip.append(t)});
+      rec.slice(0,narrow()?8:12).forEach(e=>{const t=el("div",{class:"gt",title:e.n+"  ·  "+e.p,onclick:()=>openFile(e)},ext(e.n),el("img",{loading:"lazy",alt:"",src:thumbUrl(e,192),onerror:function(){this.remove()}}));if(VID.test(e.n))t.append(el("span",{class:"vb"},"▶"));strip.append(t)});
       left.append(el("div",{class:"card"},el("h5",{},"Fotos e vídeos recentes"),rec.length?strip:el("div",{class:"muted"},S.stats?"Nada recente.":"Carregando…")));
       const dl=S.vols[0]?S.vols[0].name:"Armazenamento";
       right.append(el("div",{class:"pi-drop"},el("div",{html:ic("up")}),el("b",{},"Arraste arquivos ou pastas aqui"),el("span",{},`Vão para ${dl} › Download`),el("div",{style:"display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:6px"},el("button",{type:"button",class:"primary","data-act":"upload"},"Escolher arquivos"),el("button",{type:"button","data-act":"uploadDir"},"Escolher pasta"))));
@@ -1078,9 +1095,7 @@ function initOther(){if(S.other)return;const rem=S.vols.find(x=>x.removable&&x.i
   S.other={v,path:"/",entries:[],sel:new Set(),last:null,search:null,searchLabel:"",writable:true};listInto(S.other,v,v===S.v&&S.vols[v]?"/Download":"/")}
 async function listInto(st,v,path){try{const j=await api("GET","/api/list?"+q({v,p:path}));st.v=v;st.path=j.path;st.entries=j.entries;st.sel.clear();st.last=null;st.writable=j.writable;st.search=null}catch(e){if(path!=="/")return listInto(st,v,"/");toast(e.message)}render()}
 async function toOther(copy){const s=selected();if(!s.length||!S.other)return;
-  try{const j=await api("POST","/api/transfer",{v:S.v,p:S.path,tv:S.other.v,to:S.other.path,names:s.map(e=>e.n),copy});
-    toast(`${j.done} item(ns) ${copy?"copiados":"movidos"} para ${S.active==="a"?"B":"A"}.`+(j.failed.length?` ${j.failed.length} falharam.`:""));
-    await go(S.path,true);listInto(S.other,S.other.v,S.other.path)}catch(e){toast(e.message)}}
+  runTransfer({v:S.v,p:S.path,tv:S.other.v,to:S.other.path,names:s.map(e=>e.n),copy},` para ${S.active==="a"?"B":"A"}`,async()=>{await go(S.path,true);if(S.other)listInto(S.other,S.other.v,S.other.path)})}
 
 // ---------- menus
 function menuDlg(title,items){return modal(close=>{
@@ -1096,7 +1111,7 @@ function moreMenu(){menuDlg("Mais opções",[
   {label:"Mostrar arquivos ocultos",icon:"doc",act:"hidden",check:S.hidden},
   ["classico","inicio"].includes(S.layout)?{label:S.view==="list"?"Ver em miniaturas":"Ver em lista",icon:"img",fn:()=>{S.view=S.view==="list"?"grid":"list";store("idx.view",S.view);render()}}:null,
   touch()?null:{label:"Comandos (Ctrl+K)",icon:"cmd",act:"cmd"},
-  {label:"Aparelho",icon:"phone",act:"device"},{label:"Trocar layout",icon:"layout",act:"layout"},{label:"Instalar como app",icon:"install",act:"install"},{label:"Sair",icon:"logout",act:"logout"}])}
+  {label:"Aparelho",icon:"phone",act:"device"},{label:"Trocar layout",icon:"layout",act:"layout"},{label:"Instalar como app",icon:"install",act:"install"},{label:"Desligar o IndexWeb",icon:"power",act:"power"},{label:"Sair",icon:"logout",act:"logout"}])}
 function itemMenu(e){const k=keyOf(e);menuDlg(e.n,[
   {label:e.d?"Abrir pasta":"Abrir",icon:e.d?"folder":"img",fn:()=>openItem(e,visible())},
   {label:"Baixar",icon:"down",act:"download"},{label:"Renomear",icon:"edit",act:"rename"},{label:"Mover",icon:"move",act:"move"},{label:"Copiar",icon:"copy",act:"copy"},
@@ -1142,7 +1157,7 @@ async function installDlg(){
 const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
 function paletteItems(t){
   const out=[];const n=norm(t.trim());
-  const A=[["Enviar arquivos","upload","up"],["Enviar pasta","uploadDir","up"],["Nova pasta","mkdir","plus"],["Baixar selecionados","download","down"],["Renomear","rename","edit","F2"],["Mover selecionados para…","move","move"],["Copiar selecionados para…","copy","copy"],["Apagar selecionados","remove","trash","Del"],["Selecionar tudo","selAll","check","Ctrl A"],["Limpar seleção","clear","x","Esc"],["Atualizar","refresh","refresh","F5"],[S.hidden?"Esconder arquivos ocultos":"Mostrar arquivos ocultos","hidden","doc"],["Pasta acima","up","arrowUp","⌫"],["Trocar layout","layout","layout"],["Instalar como app","install","install"],["Sair","logout","logout"]];
+  const A=[["Enviar arquivos","upload","up"],["Enviar pasta","uploadDir","up"],["Nova pasta","mkdir","plus"],["Baixar selecionados","download","down"],["Renomear","rename","edit","F2"],["Mover selecionados para…","move","move"],["Copiar selecionados para…","copy","copy"],["Apagar selecionados","remove","trash","Del"],["Selecionar tudo","selAll","check","Ctrl A"],["Limpar seleção","clear","x","Esc"],["Atualizar","refresh","refresh","F5"],[S.hidden?"Esconder arquivos ocultos":"Mostrar arquivos ocultos","hidden","doc"],["Pasta acima","up","arrowUp","⌫"],["Trocar layout","layout","layout"],["Instalar como app","install","install"],["Desligar o IndexWeb","power","power"],["Sair","logout","logout"]];
   if(S.layout==="duplo")A.unshift(["Copiar para o outro painel","toOther","copy","F5"],["Mover para o outro painel","mvOther","move","F6"]);
   if(S.layout==="inicio")A.unshift(["Ir para o início","home","home"]);
   if(n)out.push({grp:"Buscar",label:`Buscar “${t.trim()}” nesta pasta e subpastas`,icon:"search",fn:()=>doSearch(t)});
@@ -1173,14 +1188,28 @@ function openPalette(){
 // ---------- envio
 $("#fFiles").onchange=e=>{enqueue([...e.target.files].map(f=>({f,rel:""})),upTarget);e.target.value="";upTarget=null};
 $("#fDir").onchange=e=>{enqueue([...e.target.files].map(f=>({f,rel:(f.webkitRelativePath||"").split("/").slice(0,-1).join("/")})),upTarget);e.target.value="";upTarget=null};
-const UP={q:[],active:0,done:0,fail:0,total:0};
+const UP={q:[],active:0,done:0,fail:0,total:0,failed:[],bytes:0,to:""};
 function enqueue(items,target){
   if(!items.length)return;
   const v=target?target.v:S.v,p=target?target.p:S.path;
-  for(const it of items){const row=el("div",{class:"it"},el("div",{class:"nm"},(it.rel?it.rel+"/":"")+it.f.name),el("div",{class:"pb"},el("i")));$("#upl").prepend(row);UP.q.push({...it,v,p,row});UP.total++}
+  for(const it of items){const label=(it.rel?it.rel+"/":"")+it.f.name;const row=el("div",{class:"it"},el("div",{class:"nm"},label),el("div",{class:"pb"},el("i")));$("#upl").prepend(row);UP.q.push({...it,v,p,row,label});UP.total++}
+  UP.to=p;
   $("#ups").classList.remove("hidden");updUp();pump();
 }
-function updUp(){$("#upt").textContent=UP.active||UP.q.length?`Enviando ${UP.done+UP.fail+1} de ${UP.total}`:`Envio concluído: ${UP.done} arquivo(s)`+(UP.fail?`, ${UP.fail} com erro`:"")}
+function updUp(){const idle=!UP.active&&!UP.q.length;
+  $("#upt").textContent=idle?(UP.fail?`Enviados ${UP.done} de ${UP.total} arquivo(s)`:`Envio concluído: ${UP.done} arquivo(s)`):`Enviando ${Math.min(UP.done+UP.fail+1,UP.total)} de ${UP.total}`;
+  $("#upr").classList.toggle("hidden",!(idle&&UP.failed.length));$("#upr").textContent=`Tentar de novo (${UP.failed.length})`;
+  const sum=$("#ups2");if(idle&&UP.failed.length){const c={};UP.failed.forEach(it=>c[it.why]=(c[it.why]||0)+1);sum.textContent="Falharam: "+Object.entries(c).map(([w,n])=>`${n} ${w}`).join(", ")+".";sum.classList.remove("hidden")}else sum.classList.add("hidden");
+  $("#upx").disabled=!idle;
+}
+// Motivo da falha de um arquivo enviado.
+function upWhy(x){let m="";try{m=JSON.parse(x.responseText).error||""}catch(e){}
+  if(x.status===0)return "conexão perdida";
+  if(x.status===507)return "sem espaço no aparelho";
+  if(x.status===401)return "sessão expirou (entre de novo)";
+  if(x.status===400&&/nome/.test(m))return "nome inválido";
+  if(x.status===413)return "grande demais";
+  return m||("erro "+x.status)}
 function pump(){
   while(UP.active<3&&UP.q.length){
     const it=UP.q.shift();UP.active++;
@@ -1189,16 +1218,39 @@ function pump(){
     x.setRequestHeader("X-Index","1");
     x.upload.onprogress=e=>{if(e.lengthComputable)it.row.querySelector(".pb i").style.width=(e.loaded/e.total*100)+"%"};
     x.onloadend=()=>{UP.active--;
-      if(x.status===200){UP.done++;it.row.querySelector(".pb i").style.width="100%"}
-      else{UP.fail++;it.row.classList.add("err");let m=x.status===0?"sem conexão":"falhou";try{m=JSON.parse(x.responseText).error||m}catch(e){}if(x.status===401)showLogin();if(x.status===0)setOffline(true);it.row.querySelector(".nm").textContent+=" — "+m}
+      if(x.status===200){UP.done++;UP.bytes+=it.f.size||0;it.row.querySelector(".pb i").style.width="100%"}
+      else{UP.fail++;it.why=upWhy(x);UP.failed.push(it);it.row.classList.add("err");if(x.status===401)showLogin();if(x.status===0)setOffline(true);
+        let w=it.row.querySelector(".why");if(!w){w=el("div",{class:"why"});it.row.append(w)}w.textContent=it.why}
       updUp();
-      if(!UP.active&&!UP.q.length){S.stats=null;if(it.v===S.v&&!S.search)go(S.path,true,true);loadInfo().catch(()=>{})}
+      if(!UP.active&&!UP.q.length){S.stats=null;if(it.v===S.v&&!S.search)go(S.path,true,true);loadInfo().catch(()=>{});
+        if(!UP.fail&&UP.done)afterUpload()}
       pump()};
     x.send(it.f);
   }
   updUp();
 }
-$("#upx").onclick=()=>{if(UP.active||UP.q.length)return;$("#ups").classList.add("hidden");$("#upl").innerHTML="";UP.done=UP.fail=UP.total=0};
+$("#upx").onclick=()=>{if(UP.active||UP.q.length)return;$("#ups").classList.add("hidden");$("#upl").innerHTML="";UP.done=UP.fail=UP.total=UP.bytes=0;UP.failed=[]};
+$("#upr").onclick=()=>{if(UP.active||UP.q.length||!UP.failed.length)return;
+  for(const it of UP.failed){it.row.classList.remove("err");const w=it.row.querySelector(".why");if(w)w.remove();it.row.querySelector(".pb i").style.width="0";UP.fail--;UP.q.push(it)}
+  UP.failed=[];pump()};
+
+// ---------- EF14: envio terminou: fazer nada ou desligar o IndexWeb
+async function afterUpload(){
+  if(isDown||load("idx.askDone","1")==="0")return;
+  const n=UP.done,b=UP.bytes,to=UP.to||"/";let chk;
+  const r=await modal(close=>el("div",{class:"dlg"},el("h2",{},"Envio concluído"),
+    el("div",{},`${n} arquivo(s) enviados (${fmtSize(b)}) para ${to}. E agora?`),
+    el("div",{class:"btns"},el("button",{onclick:()=>close("off")},"Desligar o IndexWeb"),el("button",{class:"primary",onclick:()=>close("none")},"Nada")),
+    el("label",{class:"nochk"},chk=el("input",{type:"checkbox"}),"Não perguntar de novo neste navegador"),
+    el("div",{class:"muted",style:"font-size:12px"},"Para desligar depois: ⋯ › Desligar o IndexWeb.")));
+  if(chk&&chk.checked)store("idx.askDone","0");
+  if(r==="off")powerOff();
+}
+async function powerOff(){
+  try{await api("POST","/api/shutdown")}catch(e){if(e.message!=="Sem conexão com o aparelho.")return toast(e.message)}
+  isDown=true;$("#off span").textContent="IndexWeb desligado. Para usar de novo, ligue no aparelho e clique em Tentar de novo.";
+  offline=false;setOffline(true);
+}
 let dragN=0;
 const dropTarget=()=>S.layout==="inicio"&&S.home?homeTarget():null;
 window.addEventListener("dragenter",e=>{if(!e.dataTransfer.types.includes("Files")||$("#app").classList.contains("hidden"))return;dragN++;$("#drop").textContent=dropTarget()?"Solte para enviar para Download":"Solte para enviar para esta pasta";$("#drop").classList.remove("hidden")});
@@ -1218,30 +1270,11 @@ window.addEventListener("drop",async e=>{
   enqueue(out,tgt);
 });
 
-// ---------- visualizar
-let PV={list:[],i:0};
-function preview(e,files){PV.list=files;PV.i=Math.max(0,files.indexOf(e));showPv()}
-function showPv(){
-  const e=PV.list[PV.i];if(!e)return;const body=$("#pvBody");body.innerHTML="";
-  $("#pvName").textContent=e.n+"  ·  "+fmtSize(e.s);
-  const url=fileUrl(e,false);
-  if(IMG.test(e.n)&&!/\.hei[cf]$/i.test(e.n))body.append(el("img",{src:url,alt:e.n}));
-  else if(VID.test(e.n))body.append(el("video",{src:url,controls:"",autoplay:""}));
-  else if(AUD.test(e.n))body.append(el("audio",{src:url,controls:"",autoplay:""}));
-  else if(PDF.test(e.n)||TXT.test(e.n))body.append(el("iframe",{src:url}));
-  else body.append(el("div",{style:"color:#ddd;text-align:center"},el("div",{},"Sem visualização para este tipo de arquivo."),el("p",{},el("button",{class:"primary",onclick:()=>download(fileUrl(e,true))},"Baixar"))));
-  $("#pvPrev").disabled=PV.i<=0;$("#pvNext").disabled=PV.i>=PV.list.length-1;
-  $("#pv").classList.remove("hidden");
+// ---------- abrir arquivo (EF10): sempre numa nova aba; o que o navegador não mostra é baixado
+function openFile(e){
+  if(IMG.test(e.n)||VID.test(e.n)||AUD.test(e.n)||PDF.test(e.n)||TXT.test(e.n))window.open(fileUrl(e,false),"_blank","noopener");
+  else download(fileUrl(e,true));
 }
-function closePv(){$("#pv").classList.add("hidden");$("#pvBody").innerHTML=""}
-$("#pvClose").onclick=closePv;
-$("#pvPrev").onclick=()=>{if(PV.i>0){PV.i--;showPv()}};
-$("#pvNext").onclick=()=>{if(PV.i<PV.list.length-1){PV.i++;showPv()}};
-{let x0=null,y0=0;const b=$("#pvBody");
-  b.addEventListener("touchstart",e=>{if(e.touches.length===1){x0=e.touches[0].clientX;y0=e.touches[0].clientY}else x0=null},{passive:true});
-  b.addEventListener("touchend",e=>{if(x0==null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
-    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&!b.querySelector("iframe")){if(dx<0)$("#pvNext").click();else $("#pvPrev").click()}},{passive:true});}
-$("#pvDl").onclick=()=>{const e=PV.list[PV.i];if(e)download(fileUrl(e,true))};
 
 // ---------- diálogos
 function modal(build){return new Promise(res=>{const m=el("div",{class:"modal"});const close=v=>{m.remove();document.removeEventListener("keydown",escK,true);res(v)};const escK=ev=>{if(ev.key==="Escape"){ev.stopPropagation();close(null)}};document.addEventListener("keydown",escK,true);m.addEventListener("mousedown",ev=>{if(ev.target===m)close(null)});m.append(build(close));document.body.append(m);const f=m.querySelector("input,button.primary");if(f&&(!touch()||f.tagName==="INPUT")){f.focus();if(f.select)f.select()}})}
@@ -1265,7 +1298,6 @@ document.addEventListener("keydown",e=>{
   if($("#app").classList.contains("hidden")||$("#pal"))return;
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(!document.querySelector(".modal"))openPalette();return}
   if(document.querySelector(".modal"))return;
-  if(!$("#pv").classList.contains("hidden")){if(e.key==="Escape")closePv();if(e.key==="ArrowLeft")$("#pvPrev").click();if(e.key==="ArrowRight")$("#pvNext").click();return}
   if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
   const items=visible();
   const run=a=>{if(enabled(a))ACT[a]({dataset:{}})};

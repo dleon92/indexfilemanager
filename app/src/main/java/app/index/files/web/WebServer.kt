@@ -59,6 +59,8 @@ import java.util.zip.ZipOutputStream
 class WebServer(
     private val app: Context,
     private val checkPassword: (CharArray) -> Long,
+    /** "Desligar o IndexWeb" pedido pela página (depois de responder). */
+    private val onShutdown: () -> Unit,
     private val onActivity: () -> Unit,
 ) {
     private var server: ServerSocket? = null
@@ -340,6 +342,10 @@ class WebServer(
                 sessions.remove(token)
                 forget(token)
                 json(out, 200, JSONObject().put("ok", true), listOf("Set-Cookie" to "$COOKIE=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"))
+            }
+            "POST" to "/api/shutdown" -> {
+                r.skipRest()
+                json(out, 200, JSONObject().put("ok", true)).also { onShutdown() }
             }
             else -> throw HttpError(404, "não encontrado")
         }
@@ -931,12 +937,14 @@ class WebServer(
         val prot = protectedPaths()
         var done = 0
         val fails = JSONArray()
+        val why = JSONObject()
+        fun fail(n: String, w: String) { fails.put(n); why.put(n, w) }
         for (i in 0 until names.length()) {
             val n = validName(names.getString(i))
             val f = File(src, n)
-            if (!f.exists() || isProtected(f, prot)) { fails.put(n); continue }
-            if (!copy && containsProtected(f, prot)) { fails.put(n); continue }
-            if (dest.path == f.path || dest.path.startsWith(f.path + "/")) { fails.put(n); continue }
+            if (!f.exists()) { fail(n, "não existe mais"); continue }
+            if (isProtected(f, prot) || (!copy && containsProtected(f, prot))) { fail(n, "tem pasta protegida"); continue }
+            if (dest.path == f.path || dest.path.startsWith(f.path + "/")) { fail(n, "o destino fica dentro dela"); continue }
             if (!copy && f.parentFile?.canonicalPath == dest.canonicalPath) { done++; continue }
             val to = uniqueIn(dest, n)
             val okk = try {
@@ -948,6 +956,7 @@ class WebServer(
                 }
             } catch (e: IOException) {
                 Log.w(TAG, "falha ao ${if (copy) "copiar" else "mover"} um item", e)
+                why.put(n, if (noSpace(e, dest)) "sem espaço no aparelho" else "erro ao gravar")
                 false
             }
             if (okk) {
@@ -956,8 +965,11 @@ class WebServer(
                 if (!copy) scan(f)
             } else fails.put(n)
         }
-        return json(out, 200, JSONObject().put("done", done).put("failed", fails))
+        return json(out, 200, JSONObject().put("done", done).put("failed", fails).put("why", why))
     }
+
+    private fun noSpace(e: IOException, dir: File): Boolean =
+        e.message?.contains("ENOSPC") == true || e.message?.contains("No space", true) == true || dir.usableSpace < 1024 * 1024
 
     private fun copyTree(f: File, to: File, prot: List<String>) {
         if (isProtected(f, prot)) return
@@ -985,13 +997,15 @@ class WebServer(
         val prot = protectedPaths()
         var done = 0
         val fails = JSONArray()
+        val why = JSONObject()
         for (i in 0 until names.length()) {
             val n = validName(names.getString(i))
             val f = File(dir, n)
-            if (!f.exists() || isProtected(f, prot) || containsProtected(f, prot)) { fails.put(n); continue }
-            if (deleteTree(f)) { done++; scan(f) } else fails.put(n)
+            if (!f.exists()) { fails.put(n); why.put(n, "não existe mais"); continue }
+            if (isProtected(f, prot) || containsProtected(f, prot)) { fails.put(n); why.put(n, "tem pasta protegida"); continue }
+            if (deleteTree(f)) { done++; scan(f) } else { fails.put(n); why.put(n, "o aparelho não deixou apagar") }
         }
-        return json(out, 200, JSONObject().put("done", done).put("failed", fails))
+        return json(out, 200, JSONObject().put("done", done).put("failed", fails).put("why", why))
     }
 
     companion object {
