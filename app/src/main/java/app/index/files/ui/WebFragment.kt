@@ -33,6 +33,13 @@ class WebFragment : Fragment(R.layout.fragment_web) {
         if (ok) toggle() else Toast.makeText(ctx, R.string.web_needs_lan, Toast.LENGTH_LONG).show()
     }
 
+    /** Notificação do IndexWeb (com o botão Desligar): pedida uma vez ao ligar; recusar não impede de ligar. */
+    private var notifAsked = false
+    private val notifPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        notifAsked = true
+        if (context != null) toggle()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.findViewById<Button>(R.id.web_toggle).setOnClickListener { toggle() }
         view.findViewById<View>(R.id.row_web_password).setOnClickListener { askPassword(null) }
@@ -103,6 +110,13 @@ class WebFragment : Fragment(R.layout.fragment_web) {
             lanPermission.launch(LAN)
             return
         }
+        if (Build.VERSION.SDK_INT >= 33 && !notifAsked &&
+            ContextCompat.checkSelfPermission(ctx, NOTIF) != PackageManager.PERMISSION_GRANTED
+        ) {
+            AppLock.beginOwnFlow()
+            notifPermission.launch(NOTIF)
+            return
+        }
         if (!WebService.hasPassword(ctx)) {
             askPassword { WebService.start(ctx) }
             return
@@ -167,5 +181,6 @@ class WebFragment : Fragment(R.layout.fragment_web) {
     companion object {
         private const val MIN = 6
         private const val LAN = "android.permission.ACCESS_LOCAL_NETWORK"
+        private const val NOTIF = "android.permission.POST_NOTIFICATIONS"
     }
 }

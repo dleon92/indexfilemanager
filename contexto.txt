@@ -366,6 +366,11 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   760 px as pastas viram gaveta (☰), botões numa faixa que rola e a lista mostra nome e tamanho;
   no toque, um toque abre e segurar seleciona, deslizar troca de arquivo na visualização. Nada
   muda no computador. Instalado no S23 e no Tab S7+.
+- Extra pós-entrega (v0.22.0): IndexWeb com 6 layouts à escolha (Clássico, Galeria, Colunas,
+  Painel duplo, Painel inicial, Lista com comandos), salvos em cada navegador; tela de senha mostra
+  o aparelho; desligar agora fecha todas as conexões (antes duravam até 60 s); aviso "Sem conexão"
+  na página; permissão de notificação (faltava: a notificação do IndexWeb não aparecia no Android
+  13+). Instalado no S23 e no Tab S7+.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

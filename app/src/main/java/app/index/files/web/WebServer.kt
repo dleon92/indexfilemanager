@@ -63,6 +63,9 @@ class WebServer(
     private var server: ServerSocket? = null
     private val pool = Executors.newCachedThreadPool()
     private val open = AtomicInteger()
+    /** Conexões abertas: ao desligar, todas são fechadas na hora (mesmo no meio de um envio). */
+    private val sockets: MutableSet<Socket> = ConcurrentHashMap.newKeySet()
+    @Volatile private var stopped = false
     private val sessions = ConcurrentHashMap<String, Long>()
     private val thumbGate = Semaphore(3)
     /** Miniaturas prontas (JPEG) em memória, até 12 MB; some quando o servidor desliga. */
@@ -93,27 +96,40 @@ class WebServer(
     }
 
     fun stop() {
+        stopped = true
         runCatching { server?.close() }
         server = null
         sessions.clear()
+        // Fechar o ServerSocket só para de aceitar; as conexões keep-alive e as transferências em
+        // curso seguiriam vivas. Fecha cada uma para o navegador perder o acesso na hora.
+        for (c in sockets.toList()) runCatching { c.close() }
+        sockets.clear()
         pool.shutdownNow()
     }
 
     private fun acceptLoop(s: ServerSocket) {
         while (!s.isClosed) {
             val c = try { s.accept() } catch (_: IOException) { break }
-            if (open.get() >= MAX_CONN) {
+            if (stopped || open.get() >= MAX_CONN) {
                 runCatching { c.close() }
                 continue
             }
             open.incrementAndGet()
-            pool.execute {
-                try {
-                    serve(c)
-                } finally {
-                    open.decrementAndGet()
-                    runCatching { c.close() }
+            sockets.add(c)
+            try {
+                pool.execute {
+                    try {
+                        serve(c)
+                    } finally {
+                        open.decrementAndGet()
+                        sockets.remove(c)
+                        runCatching { c.close() }
+                    }
                 }
+            } catch (_: java.util.concurrent.RejectedExecutionException) {
+                open.decrementAndGet()
+                sockets.remove(c)
+                runCatching { c.close() }
             }
         }
     }
@@ -169,7 +185,7 @@ class WebServer(
         c.tcpNoDelay = true
         val input = BufferedInputStream(c.getInputStream(), 16384)
         val out = c.getOutputStream().buffered(32768)
-        while (true) {
+        while (!stopped) {
             val req = try { readRequest(input) } catch (_: Exception) { return } ?: return
             val sent = try {
                 onActivity()
@@ -287,6 +303,8 @@ class WebServer(
 
         if (r.method == "GET" && (r.path == "/" || r.path == "/index.html")) return page(out)
         if (r.method == "POST" && r.path == "/api/login") return login(r, out)
+        // Tela de senha: só o nome do aparelho, para saber em qual se está entrando.
+        if (r.method == "GET" && r.path == "/api/hello") return json(out, 200, JSONObject().put("device", deviceName()).put("model", model()))
 
         val token = r.cookie(COOKIE)
         val authed = token != null && sessions[token]?.let { System.currentTimeMillis() - it < SESSION_MS } == true
@@ -306,6 +324,8 @@ class WebServer(
             "GET" to "/api/thumb" -> thumb(r, out)
             "GET" to "/api/zip" -> zip(r, out)
             "GET" to "/api/search" -> search(r, out)
+            "GET" to "/api/stats" -> stats(r, out)
+            "GET" to "/api/kind" -> kind(r, out)
             "PUT" to "/api/upload" -> upload(r, out)
             "POST" to "/api/mkdir" -> mkdir(r, out)
             "POST" to "/api/rename" -> rename(r, out)
@@ -417,9 +437,17 @@ class WebServer(
 
     // ---------------------------------------------------------------- API
 
+    private fun model() = "${Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${Build.MODEL}"
+
+    /** Nome do aparelho definido pelo usuário (Configurações > Sobre o telefone); senão, o modelo. */
+    private fun deviceName(): String =
+        runCatching { android.provider.Settings.Global.getString(app.contentResolver, "device_name") }.getOrNull()
+            ?.trim()?.takeIf { it.isNotEmpty() } ?: model()
+
     private fun info(out: OutputStream): Sent {
         val o = JSONObject()
-        o.put("device", "${Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${Build.MODEL}")
+        o.put("device", deviceName())
+        o.put("model", model())
         o.put("android", Build.VERSION.RELEASE)
         val bat = app.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         if (bat != null) {
@@ -492,6 +520,93 @@ class WebServer(
             }
         }
         return json(out, 200, JSONObject().put("entries", arr).put("truncated", arr.length() >= 500))
+    }
+
+    // ---------------------------------------------------------------- por tipo (índice do sistema)
+
+    private class Media(val path: String, val size: Long, val modified: Long, val kind: String)
+
+    /** Tipo de arquivo para o resumo: img, vid, aud, doc, zip, apk (ou null). */
+    private fun kindOf(mime: String?, name: String): String? {
+        val m = (mime ?: mimeOf(name)).lowercase(Locale.US)
+        val ext = name.substringAfterLast('.', "").lowercase(Locale.US)
+        return when {
+            m.startsWith("image/") -> "img"
+            m.startsWith("video/") -> "vid"
+            m.startsWith("audio/") -> "aud"
+            ext == "apk" -> "apk"
+            ext in setOf("zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz") -> "zip"
+            ext in setOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp", "rtf", "txt", "md", "csv", "epub") -> "doc"
+            else -> null
+        }
+    }
+
+    /**
+     * Arquivos do índice de mídia do Android (MediaStore), já sem pastas protegidas, ocultas
+     * (começando com ponto) e fora dos volumes mostrados. [only] filtra um tipo.
+     */
+    private fun indexed(only: String?): Sequence<Pair<Int, Media>> = sequence {
+        val vols = volumes().map { it.dir.canonicalFile.path + "/" }
+        val prot = protectedPaths()
+        val uri = android.provider.MediaStore.Files.getContentUri("external")
+        @Suppress("DEPRECATION")
+        val cols = arrayOf(android.provider.MediaStore.MediaColumns.DATA, android.provider.MediaStore.MediaColumns.SIZE, android.provider.MediaStore.MediaColumns.DATE_MODIFIED, android.provider.MediaStore.MediaColumns.MIME_TYPE)
+        val order = "${android.provider.MediaStore.MediaColumns.DATE_MODIFIED} DESC"
+        val c = runCatching { app.contentResolver.query(uri, cols, null, null, order) }.getOrNull() ?: return@sequence
+        c.use {
+            while (it.moveToNext()) {
+                val path = it.getString(0) ?: continue
+                val name = path.substringAfterLast('/')
+                if (name.isEmpty() || path.contains("/.")) continue
+                val k = kindOf(it.getString(3), name) ?: continue
+                if (only != null && k != only) continue
+                val vi = vols.indexOfFirst { root -> path.startsWith(root) }
+                if (vi < 0) continue
+                if (prot.any { pp -> "$path/".startsWith(pp) }) continue
+                yield(vi to Media(path, it.getLong(1), it.getLong(2) * 1000, k))
+            }
+        }
+    }
+
+    private fun roots() = volumes().map { it.dir.canonicalFile.path }
+
+    private fun mediaJson(roots: List<String>, vi: Int, m: Media): JSONObject {
+        val rel = m.path.removePrefix(roots[vi])
+        return JSONObject().put("n", rel.substringAfterLast('/')).put("p", rel.substringBeforeLast('/').ifEmpty { "/" })
+            .put("v", vi).put("d", false).put("s", m.size).put("m", m.modified)
+    }
+
+    @Volatile private var statsCache: Pair<Long, JSONObject>? = null
+
+    /** Resumo para o painel inicial: quantidade e tamanho por tipo e os recentes. */
+    private fun stats(r: Req, out: OutputStream): Sent {
+        statsCache?.let { (t, o) -> if (System.currentTimeMillis() - t < 30_000) return json(out, 200, o) }
+        val count = HashMap<String, Long>()
+        val size = HashMap<String, Long>()
+        val recent = JSONArray()
+        val roots = roots()
+        for ((vi, m) in indexed(null)) {
+            count[m.kind] = (count[m.kind] ?: 0) + 1
+            size[m.kind] = (size[m.kind] ?: 0) + m.size
+            if (recent.length() < 24 && (m.kind == "img" || m.kind == "vid")) recent.put(mediaJson(roots, vi, m))
+        }
+        val kinds = JSONObject()
+        for (k in listOf("img", "vid", "aud", "doc", "zip", "apk")) kinds.put(k, JSONObject().put("n", count[k] ?: 0).put("s", size[k] ?: 0))
+        val o = JSONObject().put("kinds", kinds).put("recent", recent)
+        statsCache = System.currentTimeMillis() to o
+        return json(out, 200, o)
+    }
+
+    /** Todos os arquivos de um tipo, mais novos primeiro (até 1000). */
+    private fun kind(r: Req, out: OutputStream): Sent {
+        val k = r.q("k") ?: throw HttpError(400, "tipo")
+        val arr = JSONArray()
+        val roots = roots()
+        for ((vi, m) in indexed(k)) {
+            arr.put(mediaJson(roots, vi, m))
+            if (arr.length() >= 1000) break
+        }
+        return json(out, 200, JSONObject().put("entries", arr).put("truncated", arr.length() >= 1000))
     }
 
     private fun mimeOf(name: String): String {

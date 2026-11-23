@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Streaming do Drive para outros apps: sem serviço em primeiro plano o Android corta
          a rede do app ~20 s depois que o player assume a tela. Permissões automáticas (sem pedido). -->
+    <!-- Notificações dos serviços (IndexWeb, reprodução, cópias) no Android 13+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <!-- Cópias, movimentações e envios continuam com o app em segundo plano (fase 7).

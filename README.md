@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.21.0 (`dist/index-v0.21.0-fase13.apk`, IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.22.0 (`dist/index-v0.22.0-fase13.apk`, IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -63,6 +63,7 @@ app/src/main/java/app/index/files/
 | `USE_BIOMETRIC` | Desbloqueio por digital/rosto. |
 | `WAKE_LOCK` | IndexWeb (v0.20.0): mantém CPU e Wi-Fi acordados com a tela apagada, só enquanto o acesso pelo computador estiver ligado. |
 | `ACCESS_LOCAL_NETWORK` | IndexWeb (v0.20.0): no Android 17, sem ela o sistema derruba as conexões da rede local (o PC não alcança o celular). Pedida ao ligar o IndexWeb. |
+| `POST_NOTIFICATIONS` | v0.22.0: no Android 13+ sem ela nenhuma notificação aparece (IndexWeb com o botão Desligar, streaming do Drive, cópias). Pedida uma vez ao ligar o IndexWeb; recusar não impede de ligar. |
 | `CHANGE_WIFI_MULTICAST_STATE` | IndexWeb (v0.20.0): endereço fixo `index.local` (mDNS); o Wi-Fi só entrega multicast com a trava. Só com o IndexWeb ligado. |
 | `MANAGE_EXTERNAL_STORAGE` | "Acesso a todos os arquivos" (Android 11+), ativado pelo usuário: adicionar pastas que o seletor do sistema recusa (Download inteira, raiz do armazenamento, raiz do cartão). |
 
@@ -733,6 +734,24 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   visíveis nas miniaturas, deslizar troca de arquivo na visualização (exceto PDF e texto).
 - Testado no navegador em tamanho de celular e tablet; instalado no S23 e no Tab S7+.
 
+### Layouts, aparelho na entrada e desligar de verdade (v0.22.0)
+
+- Seis layouts, escolhidos em "Layout" (ou ⋯ › Trocar layout) e salvos em cada navegador:
+  Clássico (o de antes), Galeria (fotos e vídeos por data, filtros por tipo), Colunas (uma
+  coluna por pasta e detalhes à direita), Painel duplo (A e B, F5 copia e F6 move para o outro),
+  Painel inicial (armazenamento, arquivos por tipo e recentes de todo o aparelho) e Lista com
+  comandos (ações na linha, caminho editável). Ctrl+K abre os comandos em qualquer um.
+- Novas rotas: `/api/hello` (nome e modelo do aparelho, sem login, para a tela de senha),
+  `/api/stats` (contagem e tamanho por tipo e 24 fotos/vídeos recentes, pelo MediaStore, 30 s em
+  cache) e `/api/kind` (até 1000 arquivos de um tipo). Pastas protegidas e ocultas ficam de fora.
+- Tela de senha mostra o nome do aparelho (o das configurações do Android) e o modelo.
+- Desligar fecha todas as conexões abertas, não só a porta: antes, um navegador já conectado
+  seguia respondendo por até 60 s e transferências continuavam. Testado no Tab S7+: a conexão
+  caiu na hora e uma nova foi recusada. A página mostra "Sem conexão" (confere a cada 20 s).
+- Permissão de notificação (Android 13+), que faltava: sem ela a notificação do IndexWeb, com o
+  botão Desligar, nunca aparecia.
+- Testado no navegador em computador e celular; instalado no S23 e no Tab S7+.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -743,7 +762,7 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 a v0.21.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.22.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -793,3 +812,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.19.0-fase13 (atalhos no ícone e de pastas; sem snapshot próprio, entregue com a v0.20.0) | 1.686.881 bytes (1.647 KB) | — |
 | v0.20.0-fase13 (IndexWeb, configurações em categorias) | 1.723.816 bytes (1.683 KB) | — |
 | v0.21.0-fase13 (IndexWeb no celular e no tablet) | 1.725.084 bytes (1.684 KB) | — |
+| v0.22.0-fase13 (IndexWeb com 6 layouts, desligar fecha conexões) | 1.742.872 bytes (1.702 KB) | — |
