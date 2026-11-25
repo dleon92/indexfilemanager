@@ -165,6 +165,20 @@ class GridZoom(
         anchor(false)
     }
 
+    /** Modo fixo pelo teclado (Ctrl+Shift+1…6): [dp] da miniatura; 0 = lista com detalhes. */
+    fun setMode(dp: Int) {
+        if (dp == 0) {
+            if (adapter.grid) {
+                setGrid(false)
+                apply(force = true)
+            }
+            return
+        }
+        prefs.thumbDp = dp
+        if (!adapter.grid) setGrid(true)
+        apply(force = true)
+    }
+
     private fun setGrid(on: Boolean) {
         adapter.grid = on
         prefs.viewGrid = on

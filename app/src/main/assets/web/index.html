@@ -336,6 +336,7 @@ ul.fails{margin:0;padding-left:20px;max-height:40vh;overflow:auto;line-height:1.
 .pane tr.row.dir td.n{color:#8fb8ff}
 .pane tr.row.sel td{color:var(--accent);background:none}
 .pane tr.row.cur td{background:#2a2e36}
+.kf{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px}
 .pane:not(.on) tr.row.cur td{background:none}
 .pane .ft{padding:5px 10px;border-top:1px solid var(--line);color:var(--muted)}
 .pd-fk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:0 8px 8px}
@@ -660,11 +661,13 @@ async function go(path,replace,keepHome){
   try{j=await api("GET","/api/list?"+q({v:S.v,p:path}))}
   catch(e){if(e.message==="login")return;if(path!=="/"){toast("Pasta indisponível: "+e.message);return go("/",replace,keepHome)}toast(e.message);return}
   S.path=j.path;S.entries=j.entries;S.sel.clear();S.last=null;S.writable=j.writable;
+  if(PF!=null){if(j.entries.some(x=>x.n===PF)){S.last=PF;S.anchor=PF;S.kbd=true}PF=null}
   S.tree.set(S.v+":"+S.path,j.entries.filter(x=>x.d).map(x=>x.n));
   let p=S.path;while(true){S.open.add(S.v+":"+p);if(p==="/")break;p=parent(p)}
   const h="#"+S.v+encodeURI(S.path);
   if(replace)history.replaceState(null,"",h);else if(location.hash!==h)history.pushState(null,"",h);
   render();
+  if(S.kbd&&S.last!=null){const m=nodeOf(S.last);if(m)m.scrollIntoView({block:"nearest"})}
 }
 window.addEventListener("popstate",()=>{const m=location.hash.slice(1).match(/^(\d+)(\/.*)?$/);if(m){S.v=+m[1];go(decodeURIComponent(m[2]||"/"),true)}});
 async function ensureTree(v,p){const key=v+":"+p;if(S.tree.has(key))return;S.tree.set(key,null);
@@ -698,7 +701,8 @@ function openItem(e,items){
   openFile(e);
 }
 function bindItem(node,e,items){
-  node.addEventListener("click",ev=>clickItem(ev,e,items));
+  const k=keyOf(e);node.dataset.key=k;if(S.kbd&&k===S.last)node.classList.add("kf");
+  node.addEventListener("click",ev=>{S.kbd=false;clickItem(ev,e,items)});
   node.addEventListener("dblclick",ev=>{if(!touch()&&!ev.target.closest("[data-act],input"))openItem(e,items)});
   node.addEventListener("contextmenu",ev=>holdItem(ev,e));
   return node;
@@ -829,6 +833,11 @@ function enabled(a){
     case "toOther":return n>0&&!srch&&!!S.other&&!S.other.search;
     case "mvOther":return n>0&&!srch&&!ro&&!!S.other&&!S.other.search;
     case "clear":return n>0;
+    case "cut":return n>0&&!srch&&!ro;
+    case "clipCopy":return n>0&&!srch;
+    case "paste":return !!CLIP&&!srch&&!ro&&!(S.layout==="inicio"&&S.home);
+    case "props":return !!kbdItem();
+    case "copyPath":return n>0||!!kbdItem();
     default:return true;
   }
 }
@@ -870,6 +879,10 @@ const ACT={
   browse(){S.home=false;S.search=null;render()},
   top(){const b=$(".items");if(b)b.scrollTo({top:0,behavior:"smooth"});const a=$("#app");if(a.scrollTo)a.scrollTo({top:0,behavior:"smooth"})},
   typeKind(b){loadKind(b.dataset.kind)},
+  cut(){clipSel(false)},clipCopy(){clipSel(true)},
+  paste(){pasteClip()},
+  props(){const e=kbdItem();if(e)propsDlg(e)},
+  copyPath(){const s=selected();const e=s.length?s:[kbdItem()].filter(Boolean);if(e.length)copyText(e.map(pathText).join("\n"),e.length===1?"Caminho copiado.":`${e.length} caminhos copiados.`)},
   rowAct(b){const k=b.dataset.k;S.sel=new Set([k]);S.last=k;render();if(enabled(b.dataset.do))ACT[b.dataset.do](b)},
   rowMenu(b){const k=b.dataset.k;const e=(S.search||S.entries).find(x=>keyOf(x)===k);if(!e)return;S.sel=new Set([k]);S.last=k;render();itemMenu(e)}
 };
@@ -1172,6 +1185,7 @@ function moreMenu(){menuDlg("Mais opções",[
 function itemMenu(e){const k=keyOf(e);menuDlg(e.n,[
   {label:e.d?"Abrir pasta":"Abrir",icon:e.d?"folder":"img",fn:()=>openItem(e,visible())},
   {label:"Baixar",icon:"down",act:"download"},{label:"Renomear",icon:"edit",act:"rename"},{label:"Mover",icon:"move",act:"move"},{label:"Copiar",icon:"copy",act:"copy"},
+  {label:"Propriedades",icon:"doc",fn:()=>propsDlg(e)},{label:"Copiar caminho",icon:"copy",fn:()=>copyText(pathText(e),"Caminho copiado.")},
   {label:"Selecionar vários",icon:"check",fn:()=>{S.sel=new Set([k]);render();toast("Toque nos outros itens para marcar.")}},
   {label:"Apagar",icon:"trash",act:"remove",cls:"danger"}])}
 function deviceDlg(){modal(close=>el("div",{class:"dlg"},el("h2",{},S.device||"Aparelho"),el("div",{class:"info",style:"padding:0;font-size:13px"},...infoLines().map(t=>el("div",{},t))),el("div",{class:"btns"},el("button",{onclick:()=>close(null)},"Fechar"))))}
@@ -1215,6 +1229,7 @@ const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
 function paletteItems(t){
   const out=[];const n=norm(t.trim());
   const A=[["Enviar arquivos","upload","up"],["Enviar pasta","uploadDir","up"],["Nova pasta","mkdir","plus"],["Baixar selecionados","download","down"],["Renomear","rename","edit","F2"],["Mover selecionados para…","move","move"],["Copiar selecionados para…","copy","copy"],["Apagar selecionados","remove","trash","Del"],["Selecionar tudo","selAll","check","Ctrl A"],["Limpar seleção","clear","x","Esc"],["Atualizar","refresh","refresh","F5"],[S.hidden?"Esconder arquivos ocultos":"Mostrar arquivos ocultos","hidden","doc"],["Pasta acima","up","arrowUp","⌫"],["Trocar layout","layout","layout"],["Instalar como app","install","install"],["Desligar o IndexWeb","power","power"],["Sair","logout","logout"]];
+  A.push(["Recortar (para colar em outra pasta)","cut","move","Ctrl+X"],["Copiar (para colar em outra pasta)","clipCopy","copy","Ctrl+C"],["Colar aqui"+(CLIP?` (${CLIP.names.length} item(ns))`:""),"paste","copy","Ctrl+V"],["Propriedades","props","doc","Alt+Enter"],["Copiar caminho","copyPath","copy"]);
   if(S.layout==="duplo")A.unshift(["Copiar para o outro painel","toOther","copy","F5"],["Mover para o outro painel","mvOther","move","F6"]);
   if(S.layout==="inicio")A.unshift(["Ir para o início","home","home"]);
   if(n)out.push({grp:"Buscar",label:`Buscar “${t.trim()}” nesta pasta e subpastas`,icon:"search",fn:()=>doSearch(t)});
@@ -1447,29 +1462,115 @@ function pickFolder(title){return modal(close=>{
 let toastT;
 function toast(msg){let t=$("#toast");if(!t){t=el("div",{id:"toast"});document.body.append(t)}t.textContent=msg;t.classList.remove("hidden");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.add("hidden"),3500)}
 
-// ---------- teclado
+// ---------- teclado (como no Explorador do Windows)
+// Área de transferência própria: Ctrl+C/Ctrl+X marcam, Ctrl+V cola na pasta aberta.
+let CLIP=null;
+function clipSel(copy){const s=selected();if(!s.length)return;
+  if(S.search){toast("Na busca, use Mover ou Copiar para… (os itens vêm de pastas diferentes).");return}
+  CLIP={v:S.v,p:S.path,names:s.map(e=>e.n),copy};
+  toast(`${s.length} item(ns) ${copy?"copiado(s)":"recortado(s)"}: abra a pasta de destino e use Ctrl+V.`)}
+function pasteClip(){if(!CLIP)return;const c=CLIP;
+  if(c.v===S.v&&c.p===S.path&&!c.copy){toast("Os itens já estão nesta pasta.");return}
+  if(!c.copy)CLIP=null;
+  runTransfer({v:c.v,p:c.p,tv:S.v,to:S.path,names:c.names,copy:c.copy},"",()=>go(S.path,true))}
+function volName(v){return S.vols[v]?S.vols[v].name:""}
+function pathText(e){return volName(e.v!=null?e.v:S.v)+(e.p!=null?join(e.p,e.n):join(S.path,e.n))}
+function copyText(t,msg){
+  const done=()=>toast(msg);
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(done,()=>fallback());return}
+  fallback();
+  function fallback(){const a=el("textarea",{style:"position:fixed;left:-9999px;top:0"});a.value=t;document.body.append(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(x){}a.remove();toast(ok?msg:"O navegador não deixou copiar.")}}
+// Item do cursor do teclado (ou o único selecionado).
+function kbdItem(){const items=visible();const it=items.find(x=>keyOf(x)===S.last);if(it&&(S.kbd||S.sel.has(S.last)))return it;const s=selected();return s.length===1?s[0]:null}
+function propsDlg(e){const lines=[["Tipo",e.d?"Pasta":(ext(e.n)||"arquivo").toUpperCase()]];
+  if(!e.d&&e.s!=null)lines.push(["Tamanho",`${fmtSize(e.s)} (${(e.s).toLocaleString("pt-BR")} bytes)`]);
+  if(e.m)lines.push(["Modificado",new Date(e.m).toLocaleString("pt-BR",{dateStyle:"long",timeStyle:"short"})]);
+  lines.push(["Local",volName(e.v!=null?e.v:S.v)+(e.p!=null?e.p:S.path)]);
+  modal(close=>el("div",{class:"dlg"},el("h2",{},e.n),el("div",{class:"info",style:"padding:0;font-size:13px"},...lines.map(([a,b])=>el("div",{},el("b",{},a+": "),b))),el("div",{class:"btns"},el("button",{class:"primary",onclick:()=>close(null)},"Fechar"))))}
+// Onde ficam os itens da pasta aberta (Colunas: a coluna atual; Duplo: o painel ativo).
+function navRoot(){return $(".co-col.cur")||$(".pane.on")||document}
+function nodeOf(k){return [...navRoot().querySelectorAll("[data-key]")].find(n=>n.dataset.key===k)}
+// Próximo item na direção, pela posição na tela: serve para lista e grade em qualquer layout.
+function navTarget(key,items){
+  const ks=items.map(keyOf),n=ks.length;let i=ks.indexOf(S.last);
+  if(i<0)return key==="End"?n-1:0;
+  if(key==="Home")return 0;if(key==="End")return n-1;
+  const cur=nodeOf(ks[i]);const r=cur?cur.getBoundingClientRect():null;
+  const perRow=r?Math.max(1,items.filter(x=>{const m=nodeOf(keyOf(x));return m&&Math.abs(m.getBoundingClientRect().top-r.top)<2}).length):1;
+  if(key==="ArrowLeft")return perRow>1?Math.max(0,i-1):i;
+  if(key==="ArrowRight")return perRow>1?Math.min(n-1,i+1):i;
+  if(key==="ArrowUp"||key==="ArrowDown"){
+    if(!r)return key==="ArrowUp"?Math.max(0,i-1):Math.min(n-1,i+1);
+    const down=key==="ArrowDown",cx=r.left+r.width/2;let best=-1,bt=Infinity,bx=Infinity;
+    ks.forEach((k,j)=>{if(j===i)return;const m=nodeOf(k);if(!m)return;const q=m.getBoundingClientRect();
+      const dy=down?q.top-r.bottom+2:r.top-q.bottom+2;if(dy<0)return;const dx=Math.abs(q.left+q.width/2-cx);
+      if(dy<bt-2||(Math.abs(dy-bt)<=2&&dx<bx)){best=j;bt=dy;bx=dx}});
+    return best<0?i:best}
+  // Páginas: quantas linhas cabem na área visível.
+  const sc=cur&&cur.closest(".items,.pane,.co-col,.li-col")||document.scrollingElement;
+  const h=sc&&sc.clientHeight?Math.min(sc.clientHeight,innerHeight):innerHeight;
+  const rows=Math.max(1,Math.floor(h/Math.max(1,r?r.height:40))-1);
+  return key==="PageUp"?Math.max(0,i-rows*perRow):Math.min(n-1,i+rows*perRow)}
+function moveTo(j,items,shift,ctrl){const ks=items.map(keyOf);if(ks[j]==null)return;
+  const from=ks.indexOf(S.last);
+  if(shift){if(S.anchor==null||ks.indexOf(S.anchor)<0)S.anchor=from<0?ks[j]:ks[from];let a=ks.indexOf(S.anchor),b=j;if(a>b)[a,b]=[b,a];S.sel.clear();for(let x=a;x<=b;x++)S.sel.add(ks[x])}
+  else if(!ctrl){S.anchor=ks[j];if(S.layout!=="duplo"){S.sel.clear();S.sel.add(ks[j])}}
+  S.last=ks[j];S.kbd=true;render();
+  const m=nodeOf(ks[j]);if(m)m.scrollIntoView({block:"nearest",inline:"nearest"})}
+// Subir pelo teclado: o cursor fica na pasta de onde se saiu.
+let PF=null;
+function upKbd(){if(S.search){clearSearch();return}if(S.path==="/")return;PF=S.path.split("/").pop();go(parent(S.path))}
+let typed="",typedAt=0;
+function typeAhead(ch,items){const now=Date.now();if(now-typedAt>1000)typed="";typedAt=now;typed+=ch.toLowerCase();
+  const ks=items.map(keyOf),n=ks.length;if(!n)return;const same=typed.length>1&&[...typed].every(c=>c===typed[0]);
+  const needle=same?typed[0]:typed;const i=ks.indexOf(S.last);const start=(same||typed.length===1)?i+1:Math.max(0,i);
+  for(let d=0;d<n;d++){const j=((start+d)%n+n)%n;if(norm(items[j].n).startsWith(norm(needle))){moveTo(j,items,false,false);return}}}
+// Modos de exibição do Explorador (Ctrl+Shift+1…6): grandes, médios, pequenos, lista.
+const VIEWKEY={Digit1:"l",Digit2:"l",Digit3:"m",Digit4:"s",Digit5:"list",Digit6:"list"};
+function setViewKey(code){const z=VIEWKEY[code];if(!z)return false;const listOk=["classico","inicio"].includes(S.layout);
+  if(z==="list"){if(!listOk)return true;S.view="list";store("idx.view","list")}
+  else{S.zoom=z;store("idx.zoom",z);if(listOk){S.view="grid";store("idx.view","grid")}}
+  render();return true}
+document.addEventListener("mousedown",()=>{if(S.kbd){S.kbd=false;$$(".kf").forEach(n=>n.classList.remove("kf"))}},true);
 document.addEventListener("keydown",e=>{
   if($("#app").classList.contains("hidden")||$("#pal"))return;
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();if(!document.querySelector(".modal"))openPalette();return}
+  const ctrl=e.ctrlKey||e.metaKey,key=e.key,lk=key.length===1?key.toLowerCase():key;
+  if(ctrl&&lk==="k"){e.preventDefault();if(!document.querySelector(".modal"))openPalette();return}
   if(document.querySelector(".modal"))return;
-  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"||e.target.tagName==="TEXTAREA")return;
   const items=visible();
   const run=a=>{if(enabled(a))ACT[a]({dataset:{}})};
   if(S.layout==="duplo"){
     const fk={F3:"open",F4:"rename",F5:"toOther",F6:"mvOther",F7:"mkdir",F8:"remove",F9:"upload"};
-    if(e.key==="Tab"){e.preventDefault();activate(S.active==="a"?"b":"a");return}
-    if(fk[e.key]){e.preventDefault();run(fk[e.key]);return}
-    if(e.key===" "||e.key==="Insert"){e.preventDefault();const ks=items.map(keyOf);const i=Math.max(0,ks.indexOf(S.last));if(ks[i]!=null){toggleSel(ks[i]);S.last=ks[Math.min(ks.length-1,i+1)]}render();return}
-    if(e.key==="Enter"){const it=items.find(x=>keyOf(x)===S.last);if(it)openItem(it,items);return}
+    if(key==="Tab"){e.preventDefault();activate(S.active==="a"?"b":"a");return}
+    if(fk[key]){e.preventDefault();run(fk[key]);return}
+    if(key===" "||key==="Insert"){e.preventDefault();const ks=items.map(keyOf);const i=Math.max(0,ks.indexOf(S.last));if(ks[i]!=null){toggleSel(ks[i]);S.last=ks[Math.min(ks.length-1,i+1)];S.kbd=true}render();return}
   }
-  if(e.key==="Backspace"){e.preventDefault();if(S.search)clearSearch();else go(parent(S.path))}
-  else if(e.key==="Delete")run("remove");
-  else if(e.key==="F2"){e.preventDefault();run("rename")}
-  else if(e.key==="F5"){e.preventDefault();ACT.refresh()}
-  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){e.preventDefault();ACT.selAll()}
-  else if(e.key==="Enter"){const s=selected();if(s.length===1)openItem(s[0],items)}
-  else if(e.key==="Escape"){if(document.body.classList.contains("drawer"))document.body.classList.remove("drawer");else{S.sel.clear();render()}}
-  else if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const ks=items.map(keyOf);let i=ks.indexOf(S.last);i=e.key==="ArrowDown"?Math.min(ks.length-1,i+1):Math.max(0,i-1);if(ks[i]!=null){if(S.layout!=="duplo"){S.sel.clear();S.sel.add(ks[i])}S.last=ks[i];render()}}
+  // Atalhos com Ctrl / Alt / Shift
+  if(ctrl&&e.shiftKey&&lk==="n"){e.preventDefault();run("mkdir");return}
+  if(ctrl&&e.shiftKey&&VIEWKEY[e.code]){e.preventDefault();setViewKey(e.code);return}
+  if(ctrl&&(lk==="f"||lk==="e")){const i=[...$$(".qin")].find(x=>x.offsetParent);if(i){e.preventDefault();i.focus();i.select()}return}
+  if(ctrl&&lk==="a"){e.preventDefault();ACT.selAll();return}
+  if(ctrl&&(lk==="c"||lk==="x")){if(String(getSelection())!=="")return;if(!S.sel.size&&S.kbd&&S.last!=null){S.sel=new Set([S.last])}e.preventDefault();run(lk==="c"?"clipCopy":"cut");render();return}
+  if(ctrl&&lk==="v"){e.preventDefault();if(CLIP)run("paste");return}
+  if(ctrl&&key===" "){e.preventDefault();if(S.last!=null){toggleSel(S.last);S.kbd=true;render()}return}
+  if(e.altKey&&key==="ArrowUp"){e.preventDefault();upKbd();return}
+  if(e.altKey&&key==="Enter"){e.preventDefault();run("props");return}
+  if((e.shiftKey&&key==="F10")||key==="ContextMenu"){const it=kbdItem();if(it){e.preventDefault();itemMenu(it)}return}
+  if(e.altKey)return; // Alt+←/→: voltar e avançar do próprio navegador
+  // Sem seleção, as ações valem para o item em foco.
+  const onFocus=()=>{if(!S.sel.size&&S.kbd&&S.last!=null)S.sel=new Set([S.last])};
+  if(key==="Backspace"){e.preventDefault();upKbd()}
+  else if(key==="Delete"){onFocus();run("remove")}
+  else if(key==="F2"){e.preventDefault();onFocus();run("rename")}
+  else if(key==="F5"){e.preventDefault();ACT.refresh()}
+  else if(key==="Enter"){const it=kbdItem();if(it)openItem(it,items)}
+  else if(key==="Escape"){if(document.body.classList.contains("drawer"))document.body.classList.remove("drawer");else{S.sel.clear();render()}}
+  else if(S.layout==="colunas"&&key==="ArrowLeft"&&!e.shiftKey){e.preventDefault();upKbd()}
+  else if(S.layout==="colunas"&&key==="ArrowRight"&&!e.shiftKey){e.preventDefault();const it=kbdItem();if(it&&it.d){S.kbd=true;openItem(it,items)}}
+  else if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Home","End","PageUp","PageDown"].includes(key)){
+    if(!items.length)return;e.preventDefault();moveTo(navTarget(key,items),items,e.shiftKey,ctrl)}
+  else if(!ctrl&&key.length===1&&(key!==" "||typed)){e.preventDefault();typeAhead(key,items)}
 });
 let rzT;window.addEventListener("resize",()=>{clearTimeout(rzT);rzT=setTimeout(render,150)});
 

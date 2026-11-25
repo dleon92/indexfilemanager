@@ -478,6 +478,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
                 if (restore != null) lm.onRestoreInstanceState(restore) else lm.scrollToPosition(0)
                 restorePending = null
                 showEmpty(if (c.items.isEmpty()) R.string.folder_empty else 0)
+                applyPendingCursor()
                 Log.i(TAG, "cache: ${c.items.size} itens em ${SystemClock.elapsedRealtime() - t0} ms")
             } else {
                 shownFolder = null
@@ -556,6 +557,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
                     if (restore != null) lm.onRestoreInstanceState(restore) else lm.scrollToPosition(0)
                 }
                 showEmpty(if (f.items.isEmpty()) R.string.folder_empty else 0)
+                applyPendingCursor()
             }.onFailure { e -> onListFailed(e, folder) }
             requireActivity().invalidateOptionsMenu()
         }
@@ -657,6 +659,15 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
 
     private fun enter(item: FileItem) {
         endSelection()
+        // Outro caminho: o Alt+→ não volta mais para onde se tinha saído.
+        if (forwardIds.lastOrNull() == item.id) {
+            forwardIds.removeAt(forwardIds.size - 1)
+            forwardNames.removeAt(forwardNames.size - 1)
+        } else {
+            forwardIds.clear()
+            forwardNames.clear()
+        }
+        cursor = -1
         scrollStates[ids.size - 1] = lm.onSaveInstanceState()
         ids.add(item.id)
         names.add(item.name)
@@ -670,12 +681,18 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         if (level < 0 || level >= ids.size - 1) return
         endSelection()
         val state = scrollStates[level]
+        val left = ids.getOrNull(level + 1)
         while (ids.size > level + 1) {
+            forwardIds.add(ids[ids.size - 1])
+            forwardNames.add(names[names.size - 1])
             ids.removeAt(ids.size - 1)
             names.removeAt(names.size - 1)
             scrollStates.removeAt(scrollStates.size - 1)
         }
         scrollStates[level] = null
+        // Na volta, o foco do teclado fica na pasta de onde se saiu.
+        cursor = -1
+        pendingCursorId = left
         renderCrumbs()
         load(state)
     }
@@ -877,22 +894,275 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
 
     // ---- Teclado e mouse (fase 12) ----
 
+    /**
+     * Teclado como no Explorador do Windows. As setas andam por um cursor próprio (← → um item,
+     * ↑ ↓ uma linha da grade), com Shift estendendo a seleção e Ctrl só movendo o foco; digitar
+     * letras pula para o nome. Sem seleção, Delete, F2, Ctrl+C/X, Alt+Enter e Shift+F10 valem
+     * para o item em foco.
+     */
     override fun onKey(e: KeyEvent): Boolean {
         if (view == null) return false
+        if (activity?.currentFocus is android.widget.EditText) return false
         val ctrl = e.isCtrlPressed
+        val shift = e.isShiftPressed
+        val alt = e.isAltPressed
+        val edit = !randomActive && root?.isRecent != true
+        val k = e.keyCode
         when {
-            ctrl && e.keyCode == KeyEvent.KEYCODE_F -> openSearch()
-            ctrl && e.keyCode == KeyEvent.KEYCODE_A -> {
+            ctrl && shift && k == KeyEvent.KEYCODE_N -> if (edit) newFolder()
+            ctrl && shift && k == KeyEvent.KEYCODE_C -> copyPaths()
+            ctrl && shift && k in KeyEvent.KEYCODE_1..KeyEvent.KEYCODE_6 -> zoom.setMode(VIEW_MODES[k - KeyEvent.KEYCODE_1])
+            ctrl && (k == KeyEvent.KEYCODE_F || k == KeyEvent.KEYCODE_E) -> openSearch()
+            ctrl && k == KeyEvent.KEYCODE_A -> {
                 if (!selecting) startSelection(null)
                 selectAll()
             }
-            e.keyCode == KeyEvent.KEYCODE_FORWARD_DEL && selecting && selected.isNotEmpty() && !randomActive -> deleteSelected()
-            e.keyCode == KeyEvent.KEYCODE_F2 && selecting && selected.size == 1 && !randomActive -> renameSelected()
+            ctrl && k == KeyEvent.KEYCODE_C -> if (!randomActive) onTargets { clipSelected(move = false) }
+            ctrl && k == KeyEvent.KEYCODE_X -> if (!randomActive) onTargets { clipSelected(move = true) }
+            ctrl && k == KeyEvent.KEYCODE_V -> {
+                if (pasteBar.visibility == View.VISIBLE) view?.findViewById<View>(R.id.paste_here)?.performClick()
+            }
+            ctrl && k == KeyEvent.KEYCODE_SPACE -> cursorItem()?.let { item ->
+                if (!selecting) startSelection(item) else toggle(item)
+            }
+            alt && k == KeyEvent.KEYCODE_DPAD_UP -> goTo(ids.size - 2)
+            alt && k == KeyEvent.KEYCODE_DPAD_LEFT -> goTo(ids.size - 2)
+            alt && k == KeyEvent.KEYCODE_DPAD_RIGHT -> forward()
+            alt && k == KeyEvent.KEYCODE_ENTER -> targets().firstOrNull()?.let { showProperties(it) }
+            k == KeyEvent.KEYCODE_FORWARD_DEL -> if (!randomActive) onTargets { deleteSelected() }
+            k == KeyEvent.KEYCODE_F2 -> if (!randomActive) onTargets(single = true) { renameSelected() }
+            k == KeyEvent.KEYCODE_F5 -> {
+                pull.setRefreshing(true)
+                revalidate(force = true)
+            }
+            (shift && k == KeyEvent.KEYCODE_F10) || k == KeyEvent.KEYCODE_MENU -> {
+                val item = cursorItem() ?: return false
+                val v = lm.findViewByPosition(cursor) ?: return false
+                contextMenu(item, v)
+            }
+            !alt && (k == KeyEvent.KEYCODE_ENTER || k == KeyEvent.KEYCODE_NUMPAD_ENTER) -> {
+                val item = cursorItem() ?: return false
+                if (selecting) endSelection()
+                if (item.isDir) enter(item) else open(item)
+            }
             Keys.zoom(e, zoom) -> Unit
-            Keys.focusList(e, list) -> Unit
+            moveKey(e) -> Unit
+            !ctrl && !alt && typeAhead(e) -> Unit
             else -> return false
         }
         return true
+    }
+
+    // ---- Cursor do teclado ----
+
+    /** Posição do item em foco no teclado (-1 = nenhum ainda). */
+    private var cursor = -1
+
+    /** Início da faixa do Shift+setas. */
+    private var anchor = -1
+
+    /** Pastas de onde se voltou com Alt+← (Alt+→ entra de novo). */
+    private val forwardIds = ArrayList<String>()
+    private val forwardNames = ArrayList<String>()
+
+    /** Depois de subir: o cursor vai para esta pasta quando a lista chegar. */
+    private var pendingCursorId: String? = null
+
+    private var typed = StringBuilder()
+    private var typedAt = 0L
+
+    private fun cursorItem(): FileItem? {
+        syncCursor()
+        return adapter.items.getOrNull(cursor)
+    }
+
+    /** O foco do Android pode ter andado (Tab, mouse): o cursor segue o item focado. */
+    private fun syncCursor() {
+        val f = list.focusedChild ?: return
+        val p = list.getChildAdapterPosition(f)
+        if (p != RecyclerView.NO_POSITION) cursor = p
+    }
+
+    /** Itens das ações do teclado: a seleção ou, sem ela, o item em foco. */
+    private fun targets(): List<FileItem> =
+        if (selecting && selected.isNotEmpty()) selectedItems() else listOfNotNull(cursorItem())
+
+    /** Roda uma ação de seleção sobre a seleção ou, sem ela, sobre o item em foco. */
+    private fun onTargets(single: Boolean = false, action: () -> Unit) {
+        if (!(selecting && selected.isNotEmpty())) {
+            val item = cursorItem() ?: return
+            startSelection(item)
+        }
+        if (single && selected.size != 1) return
+        action()
+    }
+
+    private fun moveKey(e: KeyEvent): Boolean {
+        val n = adapter.items.size
+        if (n == 0) return false
+        val span = if (adapter.grid) lm.spanCount.coerceAtLeast(1) else 1
+        syncCursor()
+        val had = cursor in 0 until n
+        val cur = if (had) cursor else -1
+        val first = lm.findFirstVisibleItemPosition().coerceAtLeast(0)
+        val last = lm.findLastVisibleItemPosition().coerceAtLeast(first)
+        val page = ((last - first + 1) / span).coerceAtLeast(1) * span
+        val target = when (e.keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> if (span == 1) return false else if (had) cur - 1 else first
+            KeyEvent.KEYCODE_DPAD_RIGHT -> if (span == 1) return false else if (had) cur + 1 else first
+            KeyEvent.KEYCODE_DPAD_UP -> if (had) cur - span else first
+            KeyEvent.KEYCODE_DPAD_DOWN -> if (had) cur + span else first
+            KeyEvent.KEYCODE_MOVE_HOME -> 0
+            KeyEvent.KEYCODE_MOVE_END -> n - 1
+            KeyEvent.KEYCODE_PAGE_UP -> if (had) cur - page else first
+            KeyEvent.KEYCODE_PAGE_DOWN -> if (had) cur + page else first
+            else -> return false
+        }
+        // Na beirada: setas ficam no lugar; páginas e linhas param no primeiro/último.
+        val to = when (e.keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> if (target !in 0 until n) cur.coerceIn(0, n - 1) else target
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> if (target !in 0 until n) cur.coerceIn(0, n - 1) else target
+            else -> target.coerceIn(0, n - 1)
+        }
+        moveCursor(to, if (had) cur else to, e.isShiftPressed, e.isCtrlPressed)
+        return true
+    }
+
+    /**
+     * Leva o cursor a [to]. Shift: seleciona a faixa desde a âncora; Ctrl: só o foco;
+     * sozinho com a seleção aberta: a seleção vira o item em foco.
+     */
+    private fun moveCursor(to: Int, from: Int, shift: Boolean, ctrl: Boolean) {
+        val items = adapter.items
+        cursor = to
+        when {
+            shift -> {
+                if (anchor !in items.indices || !selecting) anchor = from
+                if (!selecting) startSelection(null)
+                selected.clear()
+                val (a, b) = if (anchor <= to) anchor to to else to to anchor
+                for (i in a..b) selected.add(items[i].id)
+                adapter.refreshAllSelection()
+                selectionChanged()
+            }
+            ctrl -> Unit
+            else -> {
+                anchor = to
+                if (selecting) {
+                    selected.clear()
+                    selected.add(items[to].id)
+                    adapter.refreshAllSelection()
+                    selectionChanged()
+                }
+            }
+        }
+        focusAt(to)
+    }
+
+    /** Rola até [pos] (se preciso) e põe o foco do Android nele (o contorno de foco). */
+    private fun focusAt(pos: Int) {
+        val first = lm.findFirstCompletelyVisibleItemPosition()
+        val last = lm.findLastCompletelyVisibleItemPosition()
+        if (first == RecyclerView.NO_POSITION || pos < first || pos > last) lm.scrollToPosition(pos)
+        lm.findViewByPosition(pos)?.takeIf { pos in first..last }?.requestFocus()
+            ?: list.post { lm.findViewByPosition(pos)?.requestFocus() }
+    }
+
+    /** Letras pulam para o primeiro nome que começa com elas (repetir a mesma letra percorre). */
+    private fun typeAhead(e: KeyEvent): Boolean {
+        val ch = e.unicodeChar.takeIf { it != 0 }?.toChar() ?: return false
+        if (ch.isWhitespace() && typed.isEmpty()) return false
+        if (ch.isISOControl()) return false
+        val now = SystemClock.elapsedRealtime()
+        if (now - typedAt > 1000) typed.clear()
+        typedAt = now
+        typed.append(ch.lowercaseChar())
+        val items = adapter.items
+        if (items.isEmpty()) return true
+        val q = typed.toString()
+        val same = q.length > 1 && q.all { it == q[0] }
+        val needle = if (same) q.substring(0, 1) else q
+        syncCursor()
+        // Mesma letra de novo: o próximo com ela; texto novo: a partir do item atual.
+        val start = if (same || q.length == 1) cursor + 1 else cursor.coerceAtLeast(0)
+        val hit = (items.indices).map { (start + it).mod(items.size) }
+            .firstOrNull { items[it].name.lowercase().startsWith(needle) } ?: return true
+        moveCursor(hit, hit, shift = false, ctrl = false)
+        return true
+    }
+
+    private fun applyPendingCursor() {
+        val id = pendingCursorId ?: return
+        pendingCursorId = null
+        val p = adapter.items.indexOfFirst { it.id == id }
+        if (p < 0) return
+        cursor = p
+        anchor = p
+        // Só mostra o contorno se o teclado estiver em uso (a lista já tem o foco).
+        if (list.hasFocus()) focusAt(p)
+    }
+
+    /** Alt+→: entra de novo na pasta de onde se voltou. */
+    private fun forward() {
+        if (forwardIds.isEmpty()) return
+        endSelection()
+        scrollStates[ids.size - 1] = lm.onSaveInstanceState()
+        ids.add(forwardIds.removeAt(forwardIds.size - 1))
+        names.add(forwardNames.removeAt(forwardNames.size - 1))
+        scrollStates.add(null)
+        cursor = -1
+        renderCrumbs()
+        load(null)
+    }
+
+    /** Ctrl+Shift+C: caminho dos itens (um por linha) na área de transferência. */
+    private fun copyPaths() {
+        val r = root ?: return
+        val items = targets()
+        if (items.isEmpty()) return
+        val base = (listOf(vault?.name ?: r.alias) + names.drop(1)).joinToString("/")
+        val text = items.joinToString("\n") { if (r.isFile && it.id.startsWith("/")) it.id else "$base/${it.name}" }
+        val cm = requireContext().getSystemService(android.content.ClipboardManager::class.java)
+        cm.setPrimaryClip(android.content.ClipData.newPlainText(getString(R.string.path_copied), text))
+        Toast.makeText(requireContext(), R.string.path_copied, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Alt+Enter: propriedades (nome, tipo, tamanho, data e onde está). */
+    private fun showProperties(item: FileItem) {
+        val r = root ?: return
+        val ctx = requireContext()
+        val where = (listOf(vault?.name ?: r.alias) + names.drop(1)).joinToString(" › ")
+        val lines = ArrayList<String>()
+        lines += getString(R.string.prop_type, if (item.isDir) getString(R.string.prop_folder) else item.mime)
+        if (!item.isDir) {
+            lines += getString(
+                R.string.prop_size,
+                android.text.format.Formatter.formatFileSize(ctx, item.size),
+                java.text.NumberFormat.getIntegerInstance().format(item.size),
+            )
+        }
+        if (item.modified > 0) {
+            lines += getString(
+                R.string.prop_modified,
+                java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.LONG, java.text.DateFormat.SHORT).format(java.util.Date(item.modified)),
+            )
+        }
+        lines += getString(R.string.prop_where, where)
+        val dlg = AlertDialog.Builder(ctx)
+            .setTitle(item.name)
+            .setMessage(lines.joinToString("\n"))
+            .setPositiveButton(R.string.ok, null)
+            .show()
+        if (item.isDir && vault == null) {
+            // Pasta: quantos itens tem (da cópia salva, sem consultar o armazenamento).
+            val app = ctx.applicationContext
+            Bg.run({ ListingCache(app).read(r.id, item.id)?.size }) { res ->
+                val n = res.getOrNull() ?: return@run
+                if (!dlg.isShowing) return@run
+                lines.add(1, resources.getQuantityString(R.plurals.prop_items, n, n))
+                dlg.setMessage(lines.joinToString("\n"))
+            }
+        }
     }
 
     /**
@@ -1288,6 +1558,9 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
     companion object {
         /** Último aviso de "sem conexão" (vale para todas as telas de lista). */
         private var lastOfflineToast = -OFFLINE_TOAST_MS
+
+        /** Ctrl+Shift+1…6 como no Explorador: extragrandes, grandes, médios, pequenos, lista, detalhes (0 = lista). */
+        private val VIEW_MODES = intArrayOf(GridZoom.FILL, 320, 160, 96, 0, 0)
         private const val OFFLINE_TOAST_MS = 2 * 60_000L
 
         private const val TAG = "Index"

@@ -149,6 +149,16 @@
     <string name="doc_password">Documento protegido por senha. Use “Abrir com…” para abrir em outro app.</string>
     <string name="doc_password_old">PDF protegido por senha. Abrir com senha exige o Android 15 ou mais novo; use “Abrir com…” para abrir em outro app.</string>
     <string name="doc_password_cancelled">PDF protegido por senha. Feche e abra de novo para digitar a senha, ou use “Abrir com…”.</string>
+    <string name="path_copied">Caminho copiado</string>
+    <string name="prop_type">Tipo: %s</string>
+    <string name="prop_folder">Pasta</string>
+    <string name="prop_size">Tamanho: %1$s (%2$s bytes)</string>
+    <string name="prop_modified">Modificado: %s</string>
+    <string name="prop_where">Local: %s</string>
+    <plurals name="prop_items">
+        <item quantity="one">Contém: %d item</item>
+        <item quantity="other">Contém: %d itens</item>
+    </plurals>
     <string name="pdf_password_title">PDF protegido por senha</string>
     <string name="pdf_password_hint">Senha</string>
     <string name="pdf_password_wrong">Senha incorreta</string>
