@@ -394,6 +394,10 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   de 10 min abre só da cópia salva; depois, uma consulta ao registro de mudanças do Drive marca só
   as pastas tocadas (relista tudo após 24 h; puxar para atualizar força). Sem rede, as pastas já
   abertas seguem navegáveis com miniaturas. Testado no S23: pastas salvas abrem em ~20 ms sem rede.
+- Extra pós-entrega (v0.28.0): PDF com senha (EF06 entregue). O leitor pede a senha, avisa
+  quando está errada e abre pelo PdfRenderer com LoadParams (Android 15+ ou extensão S 13).
+  "Lembrar a senha" cifra com a chave do Keystore, sob um hash do arquivo; Configurações →
+  Segurança esquece todas. Testado no S23 com um PDF de teste (senha 1234).
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

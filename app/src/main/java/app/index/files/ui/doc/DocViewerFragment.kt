@@ -25,6 +25,7 @@ import app.index.files.R
 import app.index.files.data.FileItem
 import app.index.files.data.FileSource
 import app.index.files.data.drive.AuthRequired
+import app.index.files.security.PdfPasswords
 import app.index.files.ui.FileOpener
 import app.index.files.ui.MainActivity
 import java.io.File
@@ -97,33 +98,7 @@ class DocViewerFragment : Fragment(R.layout.fragment_doc_viewer), MainActivity.K
         if (s.kind == DocKind.PDF) {
             val tmp = File(File(app.cacheDir, "doc_view"), "doc.pdf")
             temp = tmp
-            Bg.run({
-                val fd = s.src.openFd(s.item) ?: copyToTemp(s, tmp)
-                try {
-                    fd to PdfRenderer(fd)
-                } catch (e: Exception) {
-                    fd.close()
-                    throw e
-                }
-            }) { res ->
-                if (g != gen || view == null) {
-                    res.getOrNull()?.second?.close() // o PdfRenderer fecha o descritor junto
-                    return@run
-                }
-                res.onSuccess { (_, r) ->
-                    if (r.pageCount == 0) {
-                        r.close()
-                        showError(getString(R.string.doc_empty))
-                        return@onSuccess
-                    }
-                    val v = PdfView(requireContext(), r) { page, count ->
-                        info.text = getString(R.string.doc_page, page + 1, count)
-                    }
-                    pdf = v
-                    attach(v)
-                    info.text = getString(R.string.doc_pages, v.pageCount)
-                }.onFailure { fail(it) }
-            }
+            openPdf(s, tmp, password = null, wrong = false)
             return
         }
         val css = css()
@@ -133,12 +108,136 @@ class DocViewerFragment : Fragment(R.layout.fragment_doc_viewer), MainActivity.K
         }
     }
 
+    /** Resultado da abertura do PDF: pronto, ou pede a senha ([wrong] = a digitada não serviu). */
+    private sealed class Opened {
+        class Ok(val r: PdfRenderer) : Opened()
+        class NeedPassword(val wrong: Boolean) : Opened()
+    }
+
+    /**
+     * Abre o PDF; protegido por senha, tenta a lembrada e senão pergunta. [password] null =
+     * primeira tentativa (sem senha, depois a lembrada).
+     */
+    private fun openPdf(s: Session, tmp: File, password: String?, wrong: Boolean, remember: Boolean = false) {
+        val g = ++gen
+        val app = requireContext().applicationContext
+        Bg.run({
+            if (password == null) {
+                try {
+                    return@run Opened.Ok(render(s, tmp, null))
+                } catch (e: SecurityException) {
+                    if (!PdfPassword.supported()) throw e
+                }
+                // Protegido: a senha lembrada, se houver.
+                val saved = PdfPasswords.get(app, s.src, s.item) ?: return@run Opened.NeedPassword(false)
+                try {
+                    return@run Opened.Ok(render(s, tmp, saved))
+                } catch (e: SecurityException) {
+                    // A senha do arquivo mudou: esquece a antiga.
+                    PdfPasswords.remove(app, s.src, s.item)
+                    return@run Opened.NeedPassword(false)
+                }
+            }
+            try {
+                val r = render(s, tmp, password)
+                if (remember) PdfPasswords.put(app, s.src, s.item, password) else PdfPasswords.remove(app, s.src, s.item)
+                Opened.Ok(r)
+            } catch (e: SecurityException) {
+                Opened.NeedPassword(true)
+            }
+        }) { res ->
+            if (g != gen || view == null) {
+                (res.getOrNull() as? Opened.Ok)?.r?.close() // o PdfRenderer fecha o descritor junto
+                return@run
+            }
+            res.onSuccess { o ->
+                when (o) {
+                    is Opened.Ok -> showPdf(o.r)
+                    is Opened.NeedPassword -> askPassword(s, tmp, o.wrong || wrong)
+                }
+            }.onFailure { fail(it) }
+        }
+    }
+
+    /** Renderizador sobre um descritor novo (uma tentativa que falha fecha o anterior). */
+    private fun render(s: Session, tmp: File, password: String?): PdfRenderer {
+        val fd = s.src.openFd(s.item)
+            ?: if (tmp.exists()) ParcelFileDescriptor.open(tmp, ParcelFileDescriptor.MODE_READ_ONLY) else copyToTemp(s, tmp)
+        try {
+            return if (password == null) PdfRenderer(fd) else PdfPassword.open(fd, password)
+        } catch (e: Exception) {
+            runCatching { fd.close() }
+            throw e
+        }
+    }
+
+    private fun showPdf(r: PdfRenderer) {
+        if (r.pageCount == 0) {
+            r.close()
+            showError(getString(R.string.doc_empty))
+            return
+        }
+        val v = PdfView(requireContext(), r) { page, count ->
+            info.text = getString(R.string.doc_page, page + 1, count)
+        }
+        pdf = v
+        attach(v)
+        info.text = getString(R.string.doc_pages, v.pageCount)
+    }
+
+    /** Pergunta a senha do PDF, com "Lembrar a senha" (cifrada no aparelho). */
+    private fun askPassword(s: Session, tmp: File, wrong: Boolean) {
+        val ctx = requireContext()
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val box = android.widget.LinearLayout(ctx).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0)
+        }
+        val field = android.widget.EditText(ctx).apply {
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setHint(R.string.pdf_password_hint)
+            isSingleLine = true
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+            if (wrong) error = getString(R.string.pdf_password_wrong)
+        }
+        val keep = android.widget.CheckBox(ctx).apply {
+            setText(R.string.pdf_password_remember)
+            isChecked = true
+        }
+        box.addView(field)
+        box.addView(keep)
+        var answered = false
+        val dlg = androidx.appcompat.app.AlertDialog.Builder(ctx)
+            .setTitle(R.string.pdf_password_title)
+            .setMessage(s.item.name)
+            .setView(box)
+            .setPositiveButton(R.string.open) { _, _ ->
+                val pw = field.text.toString()
+                if (pw.isEmpty()) return@setPositiveButton
+                answered = true
+                openPdf(s, tmp, pw, wrong = false, remember = keep.isChecked)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .setOnDismissListener { if (!answered && view != null) showError(getString(R.string.doc_password_cancelled)) }
+            .create()
+        field.setOnEditorActionListener { _, _, _ ->
+            dlg.getButton(android.content.DialogInterface.BUTTON_POSITIVE)?.performClick()
+            true
+        }
+        dlg.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        dlg.show()
+        field.requestFocus()
+    }
+
     /** Sem descritor de arquivo (Drive): cópia temporária, apagada ao fechar. */
     private fun copyToTemp(s: Session, f: File): ParcelFileDescriptor {
         val dir = f.parentFile!!
         dir.mkdirs()
         dir.listFiles()?.forEach { it.delete() }
-        s.src.openRead(s.item).use { input -> f.outputStream().use { input.copyTo(it, 256 * 1024) } }
+        // Cópia em .part: uma cópia pela metade não serve para as tentativas de senha.
+        val part = File(dir, f.name + ".part")
+        s.src.openRead(s.item).use { input -> part.outputStream().use { input.copyTo(it, 256 * 1024) } }
+        if (!part.renameTo(f)) throw java.io.IOException("cópia temporária")
         return ParcelFileDescriptor.open(f, ParcelFileDescriptor.MODE_READ_ONLY)
     }
 
@@ -186,7 +285,8 @@ class DocViewerFragment : Fragment(R.layout.fragment_doc_viewer), MainActivity.K
             return
         }
         val msg = when {
-            e is SecurityException || e.message?.contains("senha") == true -> getString(R.string.doc_password)
+            e is SecurityException || e.message?.contains("senha") == true ->
+                getString(if (PdfPassword.supported()) R.string.doc_password else R.string.doc_password_old)
             e is OutOfMemoryError -> getString(R.string.doc_too_big)
             else -> getString(R.string.doc_failed)
         }

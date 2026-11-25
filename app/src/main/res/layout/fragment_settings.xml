@@ -363,6 +363,10 @@
                 android:text="@string/lock_secure" />
         </LinearLayout>
 
+        <include
+            android:id="@+id/row_pdf_passwords"
+            layout="@layout/row_setting" />
+
         </LinearLayout>
 
         <!-- ===== Dados do app (ação destrutiva, por último) ===== -->

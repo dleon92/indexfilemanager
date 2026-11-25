@@ -18,6 +18,7 @@ import app.index.files.Bg
 import app.index.files.R
 import app.index.files.data.Prefs
 import app.index.files.data.Roots
+import app.index.files.security.PdfPasswords
 import app.index.files.security.AppLock
 import app.index.files.thumbs.ThumbnailManager
 
@@ -151,6 +152,23 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                         refreshSize(tm, sizeText)
                         refreshSize(tm, driveText, drive = true)
                     }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+
+        // Senhas de PDF lembradas (cifradas com a chave do Keystore).
+        val pdfRow = view.findViewById<View>(R.id.row_pdf_passwords)
+        pdfRow.findViewById<TextView>(R.id.title).setText(R.string.pdf_passwords)
+        renderPdfPasswords(pdfRow)
+        pdfRow.setOnClickListener {
+            val app = requireContext().applicationContext
+            if (PdfPasswords.count(app) == 0) return@setOnClickListener
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.pdf_passwords)
+                .setMessage(R.string.pdf_passwords_confirm)
+                .setPositiveButton(R.string.pdf_passwords_forget) { _, _ ->
+                    Bg.run({ PdfPasswords.clear(app) }) { if (view != null) renderPdfPasswords(pdfRow) }
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
@@ -485,6 +503,12 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             renderAccount(row)
             parentFragmentManager.setFragmentResult(MainActivity.ROOTS_CHANGED, Bundle.EMPTY)
         }
+    }
+
+    private fun renderPdfPasswords(row: View) {
+        val n = PdfPasswords.count(requireContext())
+        row.findViewById<TextView>(R.id.summary).text =
+            if (n == 0) getString(R.string.pdf_passwords_none) else getString(R.string.pdf_passwords_count, n)
     }
 
     private fun refreshSize(tm: ThumbnailManager, target: TextView, drive: Boolean = false) {

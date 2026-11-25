@@ -147,6 +147,17 @@
     <string name="doc_pages">PDF · %1$d páginas</string>
     <string name="doc_empty">Documento vazio.</string>
     <string name="doc_password">Documento protegido por senha. Use “Abrir com…” para abrir em outro app.</string>
+    <string name="doc_password_old">PDF protegido por senha. Abrir com senha exige o Android 15 ou mais novo; use “Abrir com…” para abrir em outro app.</string>
+    <string name="doc_password_cancelled">PDF protegido por senha. Feche e abra de novo para digitar a senha, ou use “Abrir com…”.</string>
+    <string name="pdf_password_title">PDF protegido por senha</string>
+    <string name="pdf_password_hint">Senha</string>
+    <string name="pdf_password_wrong">Senha incorreta</string>
+    <string name="pdf_password_remember">Lembrar a senha neste aparelho</string>
+    <string name="pdf_passwords">Senhas de PDF lembradas</string>
+    <string name="pdf_passwords_none">Nenhuma</string>
+    <string name="pdf_passwords_count">%d salvas, cifradas no aparelho. Toque para esquecer todas.</string>
+    <string name="pdf_passwords_confirm">Esquecer todas as senhas de PDF lembradas? Os PDFs voltam a pedir a senha.</string>
+    <string name="pdf_passwords_forget">Esquecer</string>
     <string name="doc_too_big">Documento grande demais para o leitor. Use “Abrir com…”.</string>
     <string name="doc_failed">Não foi possível ler este documento. Ele pode estar corrompido ou num formato que o leitor não conhece. Use “Abrir com…”.</string>
     <string name="viewer_counter">%1$d / %2$d</string>
