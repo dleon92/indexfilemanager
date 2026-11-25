@@ -110,6 +110,51 @@ object DriveApi {
         return out
     }
 
+    /** Ponto de partida do registro de mudanças (changes API). */
+    fun startPageToken(ctx: Context): String =
+        JSONObject(getText(ctx, BASE + "changes/startPageToken?supportsAllDrives=true")).getString("startPageToken")
+
+    /** Uma mudança: o arquivo, seus pais atuais e como ficou (removed = apagado, na lixeira ou sem acesso). */
+    class Change(val fileId: String, val parents: List<String>, val removed: Boolean, val size: Long, val modified: Long)
+
+    /** Mudanças desde [token] (todas as páginas) e o token para a próxima vez. */
+    fun changes(ctx: Context, token: String): Pair<List<Change>, String> {
+        val out = ArrayList<Change>()
+        var page = token
+        while (true) {
+            val url = BASE + "changes?" + query(
+                "pageToken" to page,
+                "fields" to "nextPageToken,newStartPageToken,changes(fileId,removed,file(parents,size,modifiedTime,trashed))",
+                "pageSize" to "1000",
+                "includeRemoved" to "true",
+                "supportsAllDrives" to "true",
+                "includeItemsFromAllDrives" to "true",
+            )
+            val json = JSONObject(getText(ctx, url))
+            val arr = json.optJSONArray("changes")
+            if (arr != null) for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val id = o.optString("fileId").ifEmpty { continue }
+                val f = o.optJSONObject("file")
+                val ps = f?.optJSONArray("parents")
+                val modified = f?.optString("modifiedTime").orEmpty().let { s ->
+                    if (s.isEmpty()) 0L else runCatching { Instant.parse(s).toEpochMilli() }.getOrDefault(0L)
+                }
+                out.add(
+                    Change(
+                        fileId = id,
+                        parents = if (ps == null) emptyList() else List(ps.length()) { ps.getString(it) },
+                        removed = o.optBoolean("removed") || f == null || f.optBoolean("trashed"),
+                        size = f?.optString("size")?.toLongOrNull() ?: 0L,
+                        modified = modified,
+                    ),
+                )
+            }
+            json.optString("newStartPageToken").ifEmpty { null }?.let { return out to it }
+            page = json.optString("nextPageToken").ifEmpty { return out to page }
+        }
+    }
+
     private fun list(ctx: Context, q: String): List<FileItem> {
         val out = ArrayList<FileItem>()
         var page: String? = null

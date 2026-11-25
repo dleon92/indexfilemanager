@@ -44,11 +44,13 @@ object PreloadUi {
         }
         val pairs = media.map { it to sourceFor(it) }
         val tm = ThumbnailManager.get(app)
-        val limit = Prefs.get(app).thumbLimitMb.toLong() * 1024 * 1024
+        val prefs = Prefs.get(app)
+        // Drive e celular têm limites separados; pastas protegidas têm cache próprio (fora do limite).
+        val drive = pairs.any { ThumbnailManager.isDrive(it.second) }
+        val limit = (if (drive) prefs.driveThumbLimitMb else prefs.thumbLimitMb).toLong() * 1024 * 1024
         Bg.run({
-            // Pastas protegidas têm cache próprio (fora do limite).
             val missing = pairs.count { (it, src) -> src !is VaultSource && tm.missingOnDisk(it, src) }
-            missing * AVG_THUMB_BYTES to tm.disk.size()
+            missing * AVG_THUMB_BYTES to (if (drive) tm.driveDisk else tm.disk).size()
         }) { res ->
             if (!f.isAdded) return@run
             val (need, used) = res.getOrDefault(0L to 0L)

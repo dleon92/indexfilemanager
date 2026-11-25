@@ -291,6 +291,8 @@ object Roots {
             setIndexedAt(ctx, r.id, 0)
         }
         java.io.File(ctx.cacheDir, "drive_open").deleteRecursively()
+        app.index.files.data.drive.DriveChanges.reset(ctx)
+        app.index.files.thumbs.ThumbnailManager.get(ctx).clearDrive()
     }
 
     fun source(ctx: Context, r: Root): FileSource =

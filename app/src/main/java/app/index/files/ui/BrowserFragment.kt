@@ -37,6 +37,7 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import app.index.files.data.AppDb
 import app.index.files.data.FileItem
 import app.index.files.data.FileOps
+import app.index.files.data.drive.DriveChanges
 import app.index.files.data.FileSource
 import app.index.files.data.ListingCache
 import app.index.files.data.Loc
@@ -263,7 +264,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         pull = PullRefresh(
             list, view.findViewById(R.id.pull), view.findViewById(R.id.pull_icon), view.findViewById(R.id.pull_spinner),
             enabled = { !randomActive && root != null },
-            onRefresh = { revalidate() },
+            onRefresh = { revalidate(force = true) },
         )
         ScrollLabels.setup(list, view.findViewById(R.id.fast_scroller), adapter) {
             (spec ?: defaultSpec()).by
@@ -348,7 +349,8 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         revalidate()
     }
 
-    private fun revalidate() {
+    /** [force]: puxar para atualizar (o Drive lista de novo mesmo com a cópia salva em dia). */
+    private fun revalidate(force: Boolean = false) {
         val r = root ?: return
         val folder = ids.lastOrNull() ?: return
         if (randomActive || shownFolder != folder) {
@@ -356,7 +358,7 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             return
         }
         val g = ++gen
-        refresh(g, r, folder, spec ?: defaultSpec(), prefs.showHidden, null)
+        refresh(g, r, folder, spec ?: defaultSpec(), prefs.showHidden, null, force)
     }
 
     override fun onResume() {
@@ -411,6 +413,9 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
     private class Cached(val items: List<FileItem>?, val spec: SortSpec, val custom: Boolean)
 
     private class Fresh(val items: List<FileItem>, val all: List<FileItem>, val diff: DiffUtil.DiffResult?, val changed: Boolean)
+
+    /** A cópia salva do Drive está em dia (registro de mudanças): nada a consultar. */
+    private object UpToDate
 
     private fun visible(all: List<FileItem>, showHidden: Boolean, s: SortSpec): List<FileItem> {
         val ctx = context?.applicationContext
@@ -484,16 +489,22 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
         }
     }
 
-    private fun refresh(g: Int, r: Root, folder: String, s: SortSpec, showHidden: Boolean, restore: Parcelable?) {
+    private fun refresh(
+        g: Int, r: Root, folder: String, s: SortSpec, showHidden: Boolean, restore: Parcelable?, force: Boolean = false,
+    ) {
         val old = if (shownFolder == folder) adapter.items else null
         val src = source
-        val cache = ListingCache(requireContext().applicationContext)
+        val app = requireContext().applicationContext
+        val cache = ListingCache(app)
+        // Drive com a cópia salva na tela: só lista se o registro de mudanças tocou a pasta.
+        val checkChanges = !force && old != null && vault == null && r.isDrive && !r.isDriveRecent
         val parentPath = names.drop(1).joinToString("/")
         val t0 = SystemClock.elapsedRealtime()
         // Lista antiga (cache) na tela: se a consulta passar de 400 ms, avisa que ainda pode mudar.
         list.removeCallbacks(showRefreshing)
         if (old != null && !pull.isRefreshing) list.postDelayed(showRefreshing, 400)
         Bg.run({
+            if (checkChanges && !DriveChanges.needsList(app, r.id, folder)) return@run UpToDate
             val all = src.listChildren(folder)
             val items = visible(all, showHidden, s)
             var changed = true
@@ -516,7 +527,11 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             list.removeCallbacks(showRefreshing)
             pull.setRefreshing(false)
             progress.visibility = View.GONE
-            res.onSuccess { f ->
+            res.onSuccess { out ->
+                val f = out as? Fresh ?: run {
+                    Log.i(TAG, "Drive: cópia salva em dia, sem consulta (${SystemClock.elapsedRealtime() - t0} ms)")
+                    return@onSuccess
+                }
                 Log.i(TAG, "listagem: ${f.items.size} itens em ${SystemClock.elapsedRealtime() - t0} ms, mudou=${f.changed}")
                 if (f.changed || shownFolder != folder) {
                     // Gravação fora da main e depois da exibição (pasta protegida: índice cifrado).
@@ -559,7 +574,11 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
             val auth = e is AuthRequired
             if (cached) {
                 if (auth) main.askConnect()
-                else Toast.makeText(requireContext(), R.string.drive_offline_cached, Toast.LENGTH_SHORT).show()
+                else if (SystemClock.elapsedRealtime() - lastOfflineToast > OFFLINE_TOAST_MS) {
+                    // Navegando sem rede: avisa uma vez, não a cada pasta aberta.
+                    lastOfflineToast = SystemClock.elapsedRealtime()
+                    Toast.makeText(requireContext(), R.string.drive_offline_cached, Toast.LENGTH_SHORT).show()
+                }
                 return
             }
             adapter.replace(emptyList())
@@ -1267,6 +1286,10 @@ class BrowserFragment : Fragment(R.layout.fragment_browser), MainActivity.KeyTar
     }
 
     companion object {
+        /** Último aviso de "sem conexão" (vale para todas as telas de lista). */
+        private var lastOfflineToast = -OFFLINE_TOAST_MS
+        private const val OFFLINE_TOAST_MS = 2 * 60_000L
+
         private const val TAG = "Index"
         private const val ARG_ROOT = "root"
         private const val ARG_VAULT = "vault"

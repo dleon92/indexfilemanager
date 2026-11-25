@@ -264,6 +264,14 @@
             layout="@layout/row_setting" />
 
         <include
+            android:id="@+id/row_drive_thumb_size"
+            layout="@layout/row_setting" />
+
+        <include
+            android:id="@+id/row_drive_thumb_limit"
+            layout="@layout/row_setting" />
+
+        <include
             android:id="@+id/row_thumb_clear"
             layout="@layout/row_setting" />
 

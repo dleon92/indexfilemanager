@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.26.0 (`dist/index-v0.26.0-fase13.apk`, IndexWeb baixa pela página com janela de progresso própria de cada layout e salva no fim; abre arquivos em nova aba, avisa antes de sair no meio de uma transferência, explica as falhas com "Tentar de novo" e pergunta se desliga ao fim do envio; senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.27.0 (`dist/index-v0.27.0-fase13.apk`, Drive guardado de vez: miniaturas num arquivo permanente próprio, pastas abrem da cópia salva com o registro de mudanças do Drive e continuam navegáveis sem rede; IndexWeb baixa pela página com janela de progresso própria de cada layout e salva no fim; abre arquivos em nova aba, avisa antes de sair no meio de uma transferência, explica as falhas com "Tentar de novo" e pergunta se desliga ao fim do envio; senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -819,6 +819,20 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
   downloads.
 - Testado no navegador com servidor de teste; instalado no S23.
 
+## Drive guardado de vez (v0.27.0)
+
+- **Miniaturas do Drive permanentes:** ficam em `files/thumbs_drive` (o sistema não apaga), com
+  limite próprio (padrão 2 GB; 1 GB, 2 GB, 5 GB ou ilimitado em Configurações → Miniaturas). As
+  miniaturas locais não as empurram para fora. Saem só quando o arquivo muda ou some (registro de
+  mudanças), quando o limite enche, ao limpar o cache ou ao desconectar a conta.
+- **Menos consultas:** pasta do Drive listada há menos de 10 min abre só da cópia salva. Depois
+  disso, uma única consulta ao registro de mudanças do Drive (`changes`, token guardado por conta)
+  diz quais pastas mudaram na conta inteira; só essas são listadas de novo. Toda pasta é relistada
+  depois de 24 h. Puxar para atualizar sempre lista de novo.
+- **Sem rede:** pastas já abertas continuam navegáveis com lista e miniaturas; o aviso "Sem
+  conexão" aparece no máximo a cada 2 min e as miniaturas que falharam pela rede voltam a ser
+  tentadas depois de 1 min.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -829,7 +843,7 @@ volta a abrir no app externo. Barra com Compartilhar e Abrir com.
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 a v0.26.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.27.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -884,3 +898,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.24.0-fase13 (IndexWeb: senha salva, instalar como app, Locais) | 1.752.336 bytes (1.711 KB) | — |
 | v0.25.0-fase13 (IndexWeb: nova aba, aviso ao sair, falhas explicadas, desligar ao fim) | 1.753.576 bytes (1.712 KB) | — |
 | v0.26.0-fase13 (IndexWeb: downloads pela página com janela de progresso por layout) | 1.757.108 bytes (1.716 KB) | — |
+| v0.27.0-fase13 (Drive: miniaturas permanentes, registro de mudanças e navegação sem rede) | 1.759.988 bytes (1.719 KB) | — |

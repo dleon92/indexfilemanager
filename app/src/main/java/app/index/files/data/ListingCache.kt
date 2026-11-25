@@ -87,6 +87,13 @@ class ListingCache(ctx: Context) {
         }
     }
 
+    /** Quando a pasta foi listada pela última vez (0 = marcada para relistar; -1 = nunca). */
+    fun listedAt(rootId: Long, folderId: String): Long =
+        db.readableDatabase.rawQuery(
+            "SELECT listed_at FROM folders_cached WHERE root_id=? AND folder_id=?",
+            arrayOf(rootId.toString(), folderId),
+        ).use { if (it.moveToFirst()) it.getLong(0) else -1L }
+
     /** dir_mtime gravado na última listagem; -2 se a pasta nunca foi listada. */
     fun folderMtime(rootId: Long, folderId: String): Long =
         db.readableDatabase.rawQuery(

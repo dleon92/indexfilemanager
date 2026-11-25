@@ -158,6 +158,8 @@
     <string name="sort_default_hint">A ordenação padrão vale para pastas sem ordenação própria. Ao mudar a ordenação dentro de uma pasta, ela fica salva só para aquela pasta.</string>
     <string name="section_thumbs">Miniaturas</string>
     <string name="thumb_cache_size">Tamanho atual do cache</string>
+    <string name="drive_thumb_size">Miniaturas do Drive (guardadas de vez)</string>
+    <string name="drive_thumb_limit">Limite das miniaturas do Drive</string>
     <string name="calculating">Calculando…</string>
     <string name="thumb_cache_limit">Limite do cache</string>
     <string name="unlimited">Ilimitado</string>

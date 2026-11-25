@@ -80,6 +80,11 @@ class Prefs private constructor(private val sp: SharedPreferences) {
         get() = sp.getInt("thumb_limit_mb", 500)
         set(v) = sp.edit().putInt("thumb_limit_mb", v).apply()
 
+    /** Limite das miniaturas do Drive (arquivo permanente próprio) em MB; 0 = ilimitado. */
+    var driveThumbLimitMb: Int
+        get() = sp.getInt("drive_thumb_limit_mb", 2048)
+        set(v) = sp.edit().putInt("drive_thumb_limit_mb", v).apply()
+
     /** true = filesDir (o sistema não apaga); false = cacheDir. */
     var thumbsInFiles: Boolean
         get() = sp.getBoolean("thumbs_in_files", false)
@@ -115,6 +120,16 @@ class Prefs private constructor(private val sp: SharedPreferences) {
     var driveEmail: String?
         get() = sp.getString("drive_email", null)
         set(v) = sp.edit().putString("drive_email", v).apply()
+
+    // Registro de mudanças do Drive: token, desde quando cobre a conta e de qual conta é.
+    val driveChangesToken: String? get() = sp.getString("drive_changes_token", null)
+    val driveChangesSince: Long get() = sp.getLong("drive_changes_since", 0L)
+    val driveChangesEmail: String? get() = sp.getString("drive_changes_email", null)
+
+    fun setDriveChanges(token: String?, since: Long, email: String?) {
+        sp.edit().putString("drive_changes_token", token).putLong("drive_changes_since", since)
+            .putString("drive_changes_email", email).apply()
+    }
 
     /** Pacotes que aparecem no "Abrir com..." (vazio = todos os apps que abrem o tipo). */
     /** Fotos abrem no visualizador do próprio app (desligado: app externo, como antes). */

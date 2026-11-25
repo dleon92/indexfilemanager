@@ -103,6 +103,20 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             Bg.run({ tm.disk.trimIfNeeded() }) { refreshSize(tm, sizeText) }
         }
 
+        // Drive: arquivo permanente próprio, com limite à parte (baixar de novo da nuvem é lento).
+        val driveRow = view.findViewById<View>(R.id.row_drive_thumb_size)
+        driveRow.findViewById<TextView>(R.id.title).setText(R.string.drive_thumb_size)
+        val driveText = driveRow.findViewById<TextView>(R.id.summary)
+        refreshSize(tm, driveText, drive = true)
+        val dLimits = intArrayOf(1024, 2048, 5120, 0)
+        val dNames = arrayOf("1 GB", "2 GB", "5 GB", getString(R.string.unlimited))
+        choiceRow(view, R.id.row_drive_thumb_limit, R.string.drive_thumb_limit, dNames, {
+            dLimits.indexOf(prefs.driveThumbLimitMb).coerceAtLeast(0)
+        }) {
+            prefs.driveThumbLimitMb = dLimits[it]
+            Bg.run({ tm.driveDisk.trimIfNeeded() }) { refreshSize(tm, driveText, drive = true) }
+        }
+
         val locations = arrayOf(getString(R.string.thumb_loc_cache), getString(R.string.thumb_loc_files))
         choiceRow(view, R.id.row_thumb_location, R.string.thumb_location, locations, {
             if (prefs.thumbsInFiles) 1 else 0
@@ -133,7 +147,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 .setTitle(R.string.thumb_clear)
                 .setMessage(R.string.thumb_clear_confirm)
                 .setPositiveButton(R.string.clear) { _, _ ->
-                    Bg.run({ tm.clearAll() }) { refreshSize(tm, sizeText) }
+                    Bg.run({ tm.clearAll() }) {
+                        refreshSize(tm, sizeText)
+                        refreshSize(tm, driveText, drive = true)
+                    }
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
@@ -470,10 +487,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
     }
 
-    private fun refreshSize(tm: ThumbnailManager, target: TextView) {
+    private fun refreshSize(tm: ThumbnailManager, target: TextView, drive: Boolean = false) {
         target.setText(R.string.calculating)
         val app = requireContext().applicationContext
-        Bg.run({ tm.disk.size() }) { res ->
+        Bg.run({ (if (drive) tm.driveDisk else tm.disk).size() }) { res ->
             if (view == null) return@run
             target.text = Formatter.formatShortFileSize(app, res.getOrDefault(0L))
         }

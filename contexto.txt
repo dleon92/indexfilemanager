@@ -389,6 +389,11 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   própria de cada layout (nome, miniatura, MB/s, tempo restante, cancelar, tentar de novo de onde
   parou); completo, o navegador salva de uma vez. Acima de 4 GB (1 GB no celular) baixa direto.
   Aviso ao sair e pergunta de desligar valem também para downloads. Instalado no S23.
+- Extra pós-entrega (v0.27.0): Drive guardado de vez. Miniaturas do Drive em arquivo permanente
+  próprio (files/thumbs_drive, limite 2 GB ajustável, separado das locais). Pasta listada há menos
+  de 10 min abre só da cópia salva; depois, uma consulta ao registro de mudanças do Drive marca só
+  as pastas tocadas (relista tudo após 24 h; puxar para atualizar força). Sem rede, as pastas já
+  abertas seguem navegáveis com miniaturas. Testado no S23: pastas salvas abrem em ~20 ms sem rede.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

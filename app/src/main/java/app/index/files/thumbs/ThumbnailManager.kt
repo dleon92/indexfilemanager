@@ -79,25 +79,50 @@ class ThumbnailManager private constructor(ctx: Context) {
     /** Chaves sem miniatura possível nesta sessão. */
     private val failed: MutableSet<String> = Collections.newSetFromMap(ConcurrentHashMap())
 
+    /**
+     * Falhas de rede (Drive sem conexão): não tentam de novo a cada rolagem, mas voltam a valer
+     * um minuto depois da última falha (a rede pode ter voltado).
+     */
+    private val netFailed: MutableSet<String> = Collections.newSetFromMap(ConcurrentHashMap())
+    @Volatile private var netFailedAt = 0L
+
+    private fun isFailed(k: String): Boolean {
+        if (netFailed.isNotEmpty() && System.currentTimeMillis() - netFailedAt > NET_RETRY_MS) netFailed.clear()
+        return k in failed || k in netFailed
+    }
+
     val disk = DiskStore(
         dirProvider = { thumbsDir(prefs.thumbsInFiles) },
         limitBytes = { prefs.thumbLimitMb.toLong() * 1024 * 1024 },
     )
 
+    /**
+     * Miniaturas do Drive: arquivo permanente próprio (filesDir, o sistema não apaga) com limite
+     * à parte, para que as miniaturas locais não as empurrem para fora. Baixar de novo da nuvem
+     * custa caro; uma miniatura só sai quando o arquivo muda (a chave muda), é apagado, ou
+     * quando o limite do Drive enche.
+     */
+    val driveDisk = DiskStore(
+        dirProvider = { File(app.filesDir, "thumbs_drive") },
+        limitBytes = { prefs.driveThumbLimitMb.toLong() * 1024 * 1024 },
+    )
+
     /** Miniaturas das pastas protegidas (cifradas, fora do cache comum). */
     private val vault = VaultThumbs(app)
 
+    private fun storeFor(src: FileSource) = if (isDrive(src)) driveDisk else disk
+
     private fun readStore(src: FileSource, key: String): Bitmap? =
-        if (src is VaultSource) vault.read(src.entry.id, key) else disk.read(key)
+        if (src is VaultSource) vault.read(src.entry.id, key) else storeFor(src).read(key)
 
     private fun writeStore(src: FileSource, key: String, b: Bitmap) =
-        if (src is VaultSource) vault.write(src.entry.id, key, b) else disk.write(key, b)
+        if (src is VaultSource) vault.write(src.entry.id, key, b) else storeFor(src).write(key, b)
 
     private fun writeEmptyStore(src: FileSource, key: String) =
-        if (src is VaultSource) vault.writeEmpty(src.entry.id, key) else disk.writeEmpty(key)
+        if (src is VaultSource) vault.writeEmpty(src.entry.id, key) else storeFor(src).writeEmpty(key)
 
     private fun existsStore(src: FileSource, key: String) =
-        if (src is VaultSource) vault.exists(src.entry.id, key) else disk.file(key).exists()
+        if (src is VaultSource) vault.exists(src.entry.id, key) else storeFor(src).file(key).exists()
 
     /** Pastas protegidas trancadas: nenhuma miniatura delas fica na memória. */
     fun dropDecrypted() {
@@ -135,7 +160,7 @@ class ThumbnailManager private constructor(ctx: Context) {
      */
     internal fun preloadOne(item: FileItem, src: FileSource, toMem: Boolean): Boolean {
         val k = key(src, item)
-        if (k in failed) return false
+        if (isFailed(k)) return false
         if (mem.get(k) != null) return true
         if (!toMem && existsStore(src, k)) return true
         if (toMem) {
@@ -157,14 +182,16 @@ class ThumbnailManager private constructor(ctx: Context) {
     /** Falta no disco (para estimar o espaço antes da pré-carga). */
     internal fun missingOnDisk(item: FileItem, src: FileSource): Boolean {
         val k = key(src, item)
-        return k !in failed && !existsStore(src, k)
+        return !isFailed(k) && !existsStore(src, k)
     }
 
     fun thumbsDir(inFiles: Boolean) = File(if (inFiles) app.filesDir else app.cacheDir, "thumbs")
 
     /** Chave do disco/memória; o sufixo marca o tamanho ("" 256 px, "L" 384 px, "X" 768 px). */
-    fun key(src: FileSource, item: FileItem, t: Int = tier): String =
-        hash("${src.cacheTag}|${item.id}|${item.modified}|${item.size}") + TIER_SUFFIX[t]
+    fun key(src: FileSource, item: FileItem, t: Int = tier): String = key(src.cacheTag, item, t)
+
+    private fun key(tag: String, item: FileItem, t: Int): String =
+        hash("$tag|${item.id}|${item.modified}|${item.size}") + TIER_SUFFIX[t]
 
     /**
      * Mostra a thumb de [item] em [view] (ou o [icon] genérico enquanto/se não houver).
@@ -183,7 +210,7 @@ class ThumbnailManager private constructor(ctx: Context) {
             return
         }
         showIcon(view, icon)
-        if (k in failed) return
+        if (isFailed(k)) return
         val req = Request(k, item, src, view)
         view.setTag(R.id.thumb_request, req)
         diskPool.execute(req)
@@ -256,7 +283,8 @@ class ThumbnailManager private constructor(ctx: Context) {
             src.loadThumbnail(item, side, null)
         } catch (e: java.io.IOException) {
             // Rede (Drive) ou E/S: falha passageira, não grava o marcador permanente.
-            failed.add(key)
+            netFailedAt = System.currentTimeMillis()
+            netFailed.add(key)
             return null
         } catch (e: Exception) {
             null
@@ -285,9 +313,33 @@ class ThumbnailManager private constructor(ctx: Context) {
                 for (t in TIER_SUFFIX.indices) keys.add(key(src, it, t))
             }
         }
-        disk.delete(keys)
+        storeFor(src).delete(keys)
         mem.evictAll()
         failed.clear()
+        netFailed.clear()
+    }
+
+    /**
+     * Miniaturas antigas de arquivos do Drive que mudaram ou sumiram (registro de mudanças do
+     * Drive): [old] traz o id, a data e o tamanho de antes. Fora da main.
+     */
+    fun forgetDrive(old: List<FileItem>) {
+        val keys = old.flatMap { item -> TIER_SUFFIX.indices.map { key(DRIVE_TAG, item, it) } }
+        if (keys.isEmpty()) return
+        for (k in keys) {
+            mem.remove(k)
+            failed.remove(k)
+            netFailed.remove(k)
+        }
+        driveDisk.delete(keys)
+    }
+
+    /** Desconectou do Drive: as miniaturas da conta saem do aparelho. */
+    fun clearDrive() {
+        driveDisk.clear()
+        mem.evictAll()
+        failed.clear()
+        netFailed.clear()
     }
 
     /** Arquivos apagados, movidos ou renomeados: as thumbs antigas não servem mais. */
@@ -298,17 +350,23 @@ class ThumbnailManager private constructor(ctx: Context) {
         for (k in keys) {
             mem.remove(k)
             failed.remove(k)
+            netFailed.remove(k)
         }
-        if (src is VaultSource) vault.delete(src.entry.id, keys) else disk.delete(keys)
+        if (src is VaultSource) vault.delete(src.entry.id, keys) else storeFor(src).delete(keys)
     }
 
     /** Volta a tentar as que falharam nesta sessão (ex.: depois de reconectar ao Drive). */
-    fun retryFailed() = failed.clear()
+    fun retryFailed() {
+        failed.clear()
+        netFailed.clear()
+    }
 
     fun clearAll() {
         disk.clear()
+        driveDisk.clear()
         mem.evictAll()
         failed.clear()
+        netFailed.clear()
     }
 
     /** Troca o local do cache (cacheDir ↔ filesDir), apagando o antigo. */
@@ -355,6 +413,12 @@ class ThumbnailManager private constructor(ctx: Context) {
         }
 
         internal fun factoryFor(name: String, priority: Int) = factory(name, priority)
+
+        private const val DRIVE_TAG = "drive"
+        private const val NET_RETRY_MS = 60_000L
+
+        /** Drive comum (não a pasta protegida, que tem as miniaturas cifradas à parte). */
+        fun isDrive(src: FileSource) = src.cacheTag == DRIVE_TAG
 
         fun hasThumb(item: FileItem) = item.kind == FileItem.KIND_IMAGE || item.kind == FileItem.KIND_VIDEO
 
