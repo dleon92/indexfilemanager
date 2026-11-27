@@ -403,6 +403,10 @@ Todas as fases do plano estão concluídas. Snapshot final: dist/index-v0.13.1-f
   Ctrl+C/X/V, Ctrl+Shift+N, Alt+↑/←/→, Alt+Enter (propriedades), Shift+F10, F5, Ctrl+F/E e
   Ctrl+Shift+1…6. No IndexWeb o cursor acha o vizinho pela posição na tela (vale nos 6 layouts).
   Testado no S23 (app) e com dados fictícios no navegador. Arrastar e soltar segue na EF01.
+- Extra pós-entrega (v0.29.1): Android 10 sem o seletor de pastas do sistema (central multimídia
+  do carro, Unisoc s9863a1h10). "Adicionar pasta local" usa o seletor próprio pelo caminho com a
+  permissão de armazenamento comum (legacy), e o IndexWeb, que exigia Android 11, passou a ligar
+  com essa permissão. Testado na central: IndexWeb ligou.
 
 Pendências (guardadas em 18/11/2026 para fazer depois):
 - Login do Drive: resolvido em 19/11/2026. Nunca expirou; nada a fazer. Se um dia expirar,

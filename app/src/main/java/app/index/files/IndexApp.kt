@@ -11,6 +11,8 @@ class IndexApp : Application() {
         // Aplicado antes de qualquer Activity existir: a primeira tela já nasce
         // no tema certo, sem "piscar" claro→escuro.
         Themes.apply(this)
+        // Android ≤ 10: pastas lidas pelo caminho dependem da permissão de armazenamento.
+        app.index.files.data.Roots.refreshLegacyFiles(this)
     }
 
     /**

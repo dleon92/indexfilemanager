@@ -94,8 +94,23 @@ object Roots {
         if (!added && p.startRoot == id) p.setStart(0L)
     }
 
-    /** "Acesso a todos os arquivos" concedido (Android 11+; antes disso o SAF já libera a Download). */
-    fun hasAllFiles(): Boolean = Build.VERSION.SDK_INT >= 30 && Environment.isExternalStorageManager()
+    /**
+     * Acesso às pastas pelo caminho: "Acesso a todos os arquivos" (Android 11+) ou, no Android 10 ou
+     * anterior, a permissão de armazenamento comum, pedida só em aparelhos sem o seletor de pastas
+     * do sistema ([legacyFiles]; nos demais o SAF continua como antes).
+     */
+    fun hasAllFiles(): Boolean =
+        if (Build.VERSION.SDK_INT >= 30) Environment.isExternalStorageManager() else legacyFiles
+
+    /** Android ≤ 10: permissão de armazenamento concedida (atualizada por [refreshLegacyFiles]). */
+    @Volatile var legacyFiles = false
+        private set
+
+    fun refreshLegacyFiles(ctx: Context) {
+        legacyFiles = Build.VERSION.SDK_INT < 30 &&
+            ctx.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
 
     /** Leitura e escrita desde a fase 7 (pastas antigas, só leitura, são readicionadas uma vez). */
     private const val FLAGS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION

@@ -203,6 +203,8 @@
     <string name="all_files_title">Acesso às pastas do aparelho</string>
     <string name="all_files_msg">O seletor de pastas do Android não deixa escolher algumas pastas, como a Download inteira ou a raiz do armazenamento. Para adicionar qualquer pasta, o Index precisa da permissão \"Acesso a todos os arquivos\".\n\nNa próxima tela, ative a opção para o Index e volte. O Index só mostra as pastas que você adicionar.</string>
     <string name="all_files_open">Abrir permissão</string>
+    <string name="storage_denied">Sem a permissão de armazenamento não dá para adicionar pastas deste aparelho.</string>
+    <string name="tree_picker_missing">Este aparelho não tem o seletor de pastas do Android.</string>
     <string name="all_files_denied">Sem a permissão, use o seletor do sistema (algumas pastas ficam bloqueadas).</string>
     <string name="local_pick_title">Escolher pasta</string>
     <string name="local_pick_hint">Escolha um armazenamento</string>
@@ -376,7 +378,7 @@
     <string name="web_password_short">Pelo menos %1$d caracteres.</string>
     <string name="web_password_mismatch">As senhas não são iguais.</string>
     <string name="web_password_saved">Senha salva.</string>
-    <string name="web_needs_all_files">Precisa do "Acesso a todos os arquivos" (Android 11 ou mais novo). Toque para abrir.</string>
+    <string name="web_needs_all_files">Precisa do acesso aos arquivos do aparelho ("Acesso a todos os arquivos" ou, no Android 10, a permissão de armazenamento). Toque para abrir.</string>
     <string name="web_about">Funciona só na rede local, sem passar por servidores de fora. A conexão não é criptografada: use em redes de confiança (casa, trabalho), não em Wi-Fi público.</string>
     <string name="share_save_label">Salvar no Index</string>
     <string name="share_save_here">Salvar aqui</string>

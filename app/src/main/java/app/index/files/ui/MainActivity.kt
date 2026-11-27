@@ -58,6 +58,16 @@ class MainActivity : AppCompatActivity() {
         if (uri != null) onTreePicked(uri)
     }
 
+    /** Android ≤ 10 sem seletor de pastas do sistema: permissão de armazenamento comum. */
+    private var afterStorage: ((Boolean) -> Unit)? = null
+
+    private val storageLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        Roots.refreshLegacyFiles(applicationContext)
+        val then = afterStorage
+        afterStorage = null
+        then?.invoke(Roots.hasAllFiles())
+    }
+
     /** O que fazer ao voltar da tela "Acesso a todos os arquivos" (true = permissão concedida). */
     private var afterAllFiles: ((Boolean) -> Unit)? = null
 
@@ -907,7 +917,23 @@ class MainActivity : AppCompatActivity() {
      */
     fun addLocalFolder() {
         if (Build.VERSION.SDK_INT < 30) {
-            pickTree()
+            if (hasTreePicker()) {
+                pickTree()
+                return
+            }
+            // Sem o seletor do sistema (centrais multimídia, por ex.): seletor próprio pelo caminho.
+            if (Roots.hasAllFiles()) {
+                push(LocalPickerFragment())
+                return
+            }
+            afterStorage = { granted ->
+                if (!granted) Toast.makeText(this, R.string.storage_denied, Toast.LENGTH_LONG).show()
+                else if (!isFinishing && !supportFragmentManager.isStateSaved) push(LocalPickerFragment())
+            }
+            storageLauncher.launch(arrayOf(
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ))
             return
         }
         if (Roots.hasAllFiles()) {
@@ -1066,8 +1092,18 @@ class MainActivity : AppCompatActivity() {
             }.getOrNull()
         }
         AppLock.beginOwnFlow()
-        treePicker.launch(start)
+        try {
+            treePicker.launch(start)
+        } catch (e: android.content.ActivityNotFoundException) {
+            // Aparelho sem o seletor de pastas do sistema (DocumentsUI).
+            Log.w("MainActivity", "seletor de pastas do sistema ausente", e)
+            Toast.makeText(this, R.string.tree_picker_missing, Toast.LENGTH_LONG).show()
+        }
     }
+
+    /** O aparelho tem o seletor de pastas do sistema (só consultado antes do Android 11). */
+    private fun hasTreePicker(): Boolean =
+        Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).resolveActivity(packageManager) != null
 
     private fun onTreePicked(tree: Uri) {
         val app = applicationContext

@@ -30,6 +30,15 @@
          pastas que o seletor do sistema (SAF) recusa (Download inteira, raiz do armazenamento).
          Pedida só ao adicionar uma pasta; ativada pelo usuário nas configurações do Android.
          Recusada: o app continua com o SAF. Pastas antigas (SAF) seguem como estão. -->
+    <!-- Android 10 ou anterior sem o seletor de pastas do sistema (DocumentsUI), como centrais
+         multimídia: "Adicionar pasta local" usa o seletor próprio pelo caminho com a permissão de
+         armazenamento comum (com requestLegacyExternalStorage no Android 10). -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         xmlns:tools="http://schemas.android.com/tools"
@@ -74,6 +83,7 @@
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Index">
 

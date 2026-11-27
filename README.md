@@ -3,7 +3,7 @@
 Gerenciador de arquivos Android ultraleve, focado em fotos e vídeos (pastas locais e Google Drive).
 
 > Estado: **todas as fases concluídas** — fase 13 (Polimento e entrega) aprovada em 11/11/2026
-> com a v0.13.1; versão atual v0.29.0 (`dist/index-v0.29.0-fase13.apk`, atalhos de teclado como no Explorador do Windows no app e no IndexWeb: setas pela grade, seleção com Shift/Ctrl, digitar o nome, copiar/recortar/colar, propriedades e modos de exibição; PDF com senha no leitor do app, com a opção de lembrar a senha cifrada no aparelho; Drive guardado de vez: miniaturas num arquivo permanente próprio, pastas abrem da cópia salva com o registro de mudanças do Drive e continuam navegáveis sem rede; IndexWeb baixa pela página com janela de progresso própria de cada layout e salva no fim; abre arquivos em nova aba, avisa antes de sair no meio de uma transferência, explica as falhas com "Tentar de novo" e pergunta se desliga ao fim do envio; senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
+> com a v0.13.1; versão atual v0.29.1 (`dist/index-v0.29.1-fase13.apk`, Android 10 ou anterior sem o seletor de pastas do sistema, como centrais multimídia: "Adicionar pasta local" usa o seletor próprio pelo caminho com a permissão de armazenamento comum, em vez de fechar, e o IndexWeb liga com essa mesma permissão; atalhos de teclado como no Explorador do Windows no app e no IndexWeb: setas pela grade, seleção com Shift/Ctrl, digitar o nome, copiar/recortar/colar, propriedades e modos de exibição; PDF com senha no leitor do app, com a opção de lembrar a senha cifrada no aparelho; Drive guardado de vez: miniaturas num arquivo permanente próprio, pastas abrem da cópia salva com o registro de mudanças do Drive e continuam navegáveis sem rede; IndexWeb baixa pela página com janela de progresso própria de cada layout e salva no fim; abre arquivos em nova aba, avisa antes de sair no meio de uma transferência, explica as falhas com "Tentar de novo" e pergunta se desliga ao fim do envio; senha salva no navegador, instalar como app e Locais na coluna de pastas; botões flutuantes Recentes, Downloads e IndexWeb (liga/desliga); IndexWeb: arquivos pelo navegador do computador, do celular ou do tablet, com 6 layouts à escolha; atalhos no ícone do app e de pastas na tela inicial; digitalizar documentos; player de vídeo; "Salvar no Index" no compartilhar; Recentes do Drive; leitor de documentos: PDF, Word (docx e
 > doc) com formatação, aberto também por outros apps, Excel, PowerPoint, LibreOffice, texto, Markdown, CSV, RTF). A fase 4 (senha) foi absorvida pelas fases
 > 6 (bloqueio do app) e 8 (pastas protegidas). Planejamento e histórico das decisões em `contexto.txt`.
 
@@ -861,6 +861,14 @@ No app (teclado físico) e no IndexWeb, em todos os layouts:
   na pasta. O Chrome reserva Ctrl+Shift+N e Ctrl+Shift+C: nova pasta e "Copiar caminho" ficam
   na paleta (Ctrl+K) e no menu do item, junto com Colar e Propriedades.
 
+## Android 10 sem seletor de pastas, como centrais multimídia (v0.29.1)
+
+- Em aparelhos com Android 10 ou anterior que não têm o seletor de pastas do sistema (DocumentsUI),
+  "Adicionar pasta local" usa o seletor próprio pelo caminho, com a permissão de armazenamento
+  comum (`READ`/`WRITE_EXTERNAL_STORAGE` até o SDK 29 e `requestLegacyExternalStorage`).
+- O IndexWeb liga no Android 10 com essa permissão (antes exigia o "Acesso a todos os arquivos",
+  que só existe a partir do Android 11). Testado numa central multimídia de carro com Android 10.
+
 ## Dependências
 
 | Dependência | Motivo |
@@ -871,7 +879,7 @@ No app (teclado físico) e no IndexWeb, em todos os layouts:
 | `com.google.android.gms:play-services-mlkit-document-scanner` 16.0.0 | Digitalizar documentos (v0.18.0): tela, bordas, filtros e PDF vêm do Play services; cliente fino, +107 KB. |
 | `androidx.media3:media3-exoplayer` e `media3-ui` 1.8.0 | Player de vídeo (v0.17.0): MKV/AVI/FLV, legendas embutidas e externas, troca de trilha, o que o `MediaPlayer` do Android não cobre. Da `media3-ui` só `SubtitleView` e `AspectRatioFrameLayout` (controles próprios). +525 KB após R8. |
 
-Nenhuma outra (v0.19.0 a v0.29.0 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
+Nenhuma outra (v0.19.0 a v0.29.1 não trouxeram nenhuma: o servidor do IndexWeb e o mDNS são
 próprios). Kotlin vem embutido no AGP 9.
 
 ## Histórico do APK release
@@ -929,3 +937,4 @@ próprios). Kotlin vem embutido no AGP 9.
 | v0.27.0-fase13 (Drive: miniaturas permanentes, registro de mudanças e navegação sem rede) | 1.759.988 bytes (1.719 KB) | — |
 | v0.28.0-fase13 (PDF com senha, com a opção de lembrar a senha) | 1.763.156 bytes (1.722 KB) | — |
 | v0.29.0-fase13 (atalhos de teclado como no Explorador, no app e no IndexWeb) | 1.769.508 bytes (1.728 KB) | — |
+| v0.29.1-fase13 (Android 10 sem seletor de pastas: pastas pelo caminho e IndexWeb) | 1.770.584 bytes (1.729 KB) | — |

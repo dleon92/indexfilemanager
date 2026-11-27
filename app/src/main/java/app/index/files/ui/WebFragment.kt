@@ -33,6 +33,13 @@ class WebFragment : Fragment(R.layout.fragment_web) {
         if (ok) toggle() else Toast.makeText(ctx, R.string.web_needs_lan, Toast.LENGTH_LONG).show()
     }
 
+    /** Android ≤ 10: permissão de armazenamento comum no lugar do "Acesso a todos os arquivos". */
+    private val storagePermission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        val ctx = context ?: return@registerForActivityResult
+        Roots.refreshLegacyFiles(ctx)
+        if (Roots.hasAllFiles()) toggle() else Toast.makeText(ctx, R.string.web_needs_all_files, Toast.LENGTH_LONG).show()
+    }
+
     /** Notificação do IndexWeb (com o botão Desligar): pedida uma vez ao ligar; recusar não impede de ligar. */
     private var notifAsked = false
     private val notifPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -103,7 +110,7 @@ class WebFragment : Fragment(R.layout.fragment_web) {
             WebService.stop(ctx)
             return
         }
-        if (Build.VERSION.SDK_INT < 30 || !Roots.hasAllFiles()) {
+        if (!Roots.hasAllFiles()) {
             openAllFiles()
             return
         }
@@ -130,7 +137,12 @@ class WebFragment : Fragment(R.layout.fragment_web) {
 
     private fun openAllFiles() {
         if (Build.VERSION.SDK_INT < 30) {
-            Toast.makeText(requireContext(), R.string.web_needs_all_files, Toast.LENGTH_LONG).show()
+            // Android 10 ou anterior (centrais multimídia, por ex.): a permissão de armazenamento comum.
+            AppLock.beginOwnFlow()
+            storagePermission.launch(arrayOf(
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ))
             return
         }
         AppLock.beginOwnFlow()
